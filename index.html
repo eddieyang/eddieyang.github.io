@@ -6,5 +6,20 @@
   </head>
   <body>
     <h1>覺得厲害</h1>
+<button id="btn">test</button>
+<script>
+document.querySelector("#btn").addEventListener("click", () => {
+    const p = "https://www.google.com";
+    const win = window.open(p, "_blank");
+    if (!win) {
+      return;
+    }
+    win.opener = null; // security problem
+    if (win.location.href && !win.location.href.startsWith("http")) {
+      win.location.href = p;
+    }
+    win.focus();
+})
+</script>
   </body>
 </html>
