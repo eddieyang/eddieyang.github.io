@@ -6,7 +6,8 @@
   </head>
   <body>
     <h1>覺得厲害</h1>
-<button id="btn">test</button>
+<button id="btn">open https</button>
+<button id="btn2">open http</button>
 <script>
 document.querySelector("#btn").addEventListener("click", () => {
     const p = "https://www.google.com";
@@ -19,7 +20,20 @@ document.querySelector("#btn").addEventListener("click", () => {
       win.location.href = p;
     }
     win.focus();
-})
+});
+
+document.querySelector("#btn2").addEventListener("click", () => {
+      const p = "http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5";
+      const win = window.open(p, "_blank");
+      if (!win) {
+        return;
+      }
+      win.opener = null; // security problem
+      if (win.location.href && !win.location.href.startsWith("http")) {
+        win.location.href = p;
+      }
+      win.focus();
+  });
 </script>
   </body>
 </html>
