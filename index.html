@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="utf-8">
     <title>你好，GitHub</title>
-  </head>
-  <body>
-    <h1>覺得厲害</h1>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.9.3/qs.min.js"></script>
+</head>
+<body>
+<h1>覺得厲害</h1>
 <button id="btn">open https</button>
 <button id="btn2">open http</button>
 
-<a aria-disabled="false" rel="nofollow me noopener noreferrer" id="a1" href="http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5">
-  a open http
+<a aria-disabled="false" rel="nofollow me noopener noreferrer" id="a1"
+   href="http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5">
+    a open http
 </a>
 <a aria-disabled="false" rel="nofollow me noopener noreferrer" id="a2" href="https://www.google.com">
-  a open https
+    a open https
 </a>
+<br/><br/>
+<button aria-disabled="false" rel="nofollow me noopener noreferrer" id="a3">
+    LINE專用 外跳用chrome
+</button>
+<button aria-disabled="false" rel="nofollow me noopener noreferrer" id="a4">
+    LINE專用 外跳預設瀏覽器
+</button>
 <script>
-document.querySelector("#btn").addEventListener("click", () => {
+  document.querySelector("#btn").addEventListener("click", () => {
     const p = "https://www.google.com";
     const win = window.open(p, "_blank");
     if (!win) {
@@ -27,49 +36,94 @@ document.querySelector("#btn").addEventListener("click", () => {
       win.location.href = p;
     }
     win.focus();
-});
-
-document.querySelector("#btn2").addEventListener("click", () => {
-      const p = "http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5";
-      const win = window.open(p, "_blank");
-      if (!win) {
-        return;
-      }
-      win.opener = null; // security problem
-      if (win.location.href && !win.location.href.startsWith("http")) {
-        win.location.href = p;
-      }
-      win.focus();
   });
-var handleWindowPage = (p) => {
-  const win = window.open(p, "_blank");
-  if (!win) {
-    return;
-  }
-  win.opener = null; // security problem
-  if (win.location.href && !win.location.href.startsWith("http")) {
-    win.location.href = p;
-  }
-  win.focus();
-};
-var onClose;
-document.querySelector("#a1").addEventListener("click", (e) => {
-  e.preventDefault();
-  handleWindowPage("http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5");
-  setTimeout(() => {
-    typeof onClose === "function" && onClose();
-  }, 1000);
-  return false;
-});
 
-document.querySelector("#a2").addEventListener("click", () => {
-  e.preventDefault();
-  handleWindowPage("https://www.google.com");
-  setTimeout(() => {
-    typeof onClose === "function" && onClose();
-  }, 1000);
-  return false;
-});
+  document.querySelector("#btn2").addEventListener("click", () => {
+    const p = "http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5";
+    const win = window.open(p, "_blank");
+    if (!win) {
+      return;
+    }
+    win.opener = null; // security problem
+    if (win.location.href && !win.location.href.startsWith("http")) {
+      win.location.href = p;
+    }
+    win.focus();
+  });
+
+  var handleWindowPage = (p) => {
+    const win = window.open(p, "_blank");
+    if (!win) {
+      return;
+    }
+    win.opener = null; // security problem
+    if (win.location.href && !win.location.href.startsWith("http")) {
+      win.location.href = p;
+    }
+    win.focus();
+  };
+
+
+  const isLine = /LINE/i.test(window.navigator.userAgent);
+  const isIos = /iP(hone|od|ad)/.test(window.navigator.platform);
+  const popup = (p, defaultBrowser = false) => {
+    if (isLine) {
+      try {
+        const url = new URL(p.startsWith("http") ? p : `https://${p}`);
+        if (isIos || !defaultBrowser) {
+          const params = Qs.parse(url.search, { ignoreQueryPrefix: true });
+          params.openExternalBrowser = 1;
+          alert("準備打開預設瀏覽器=" + `${url.origin}${url.pathname}?${Qs.stringify(params)}`);
+          location.href = `${url.origin}${url.pathname}?${Qs.stringify(params)}`;
+        } else {
+          let convert;
+          if (p.startsWith("http")) {
+            convert = p.replace(/http/, "googlechrome");
+          } else {
+            convert = `googlechromes://${p}`;
+          }
+          alert("準備去=" + convert);
+          location.href = convert;
+        }
+        return;
+      } catch (e) {
+      }
+    } else {
+      alert("不是line");
+    }
+  };
+
+  var onClose;
+  document.querySelector("#a1").addEventListener("click", (e) => {
+    e.preventDefault();
+    handleWindowPage("http://launch2.yoopayment.com/yxfwl/120606/sender.do?senderKey=c2e83157-c7c8-4fbb-8e3d-bb5114f08fa5");
+    setTimeout(() => {
+      typeof onClose === "function" && onClose();
+    }, 1000);
+    return false;
+  });
+
+  document.querySelector("#a2").addEventListener("click", (e) => {
+    e.preventDefault();
+    handleWindowPage("https://www.google.com");
+    setTimeout(() => {
+      typeof onClose === "function" && onClose();
+    }, 1000);
+    return false;
+  });
+
+  document.querySelector("#a3").addEventListener("click", (e) => {
+    e.preventDefault();
+    popup("https://www.google.com");
+    return false;
+  });
+
+  document.querySelector("#a4").addEventListener("click", (e) => {
+    e.preventDefault();
+    popup("https://www.google.com", true);
+    return false;
+  });
+
 </script>
-  </body>
+</body>
 </html>
