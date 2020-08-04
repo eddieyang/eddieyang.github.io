@@ -4,12 +4,70 @@
     <meta charset="utf-8">
     <title>你好，GitHub</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qs/6.9.3/qs.min.js"></script>
+
+    <style>
+      @font-face {
+        font-family: "Noto Sans JP";
+        src: url("./stylesheets/fonts/NotoSansJP-Regular.otf");
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Noto Sans JP";
+        src: url("./stylesheets/fonts/NotoSansJP-Bold.otf");
+        font-weight: bold;
+        font-display: swap;
+      }
+
+      h2 {
+        font-size: 24px !important;
+      }
+
+      h3 {
+        font-size: 20px !important;
+      }
+
+      h2, h3, h4 {
+        font-size: 14px;
+        font-weight: normal;
+        line-height: 20px;
+        margin: 0;
+        padding: 5px 0;
+      }
+
+      .bold {
+        font-weight: bold;
+      }
+
+      hr {
+        margin: 10px 0;
+      }
+    </style>
 </head>
 <body>
-<h2 style="font-family: Meiryo,Arial, Verdana, sans-serif">1. Test Meiryo: あいうえお山田太郎</h2>
-<h2 style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">2. Test Noto Sans JP: あいうえお山田太郎</h2>
-<h2 style="font-family: Helvetica,Arial, Verdana, sans-serif">3. Test Helvetica: あいうえお山田太郎</h2>
-<br />
+<h4 style="font-family: Arial, Verdana, sans-serif">0. [大] プリセット Test Arial: あいうえお山田太郎</h4>
+<h3 style="font-family: Arial, Verdana, sans-serif">0. [小] プリセット Test Arial: あいうえお山田太郎</h3>
+<h2 style="font-family: Arial, Verdana, sans-serif">0. [小] プリセット Test Arial: あいうえお山田太郎</h2>
+<hr/>
+<h4 style="font-family: Meiryo,Arial, Verdana, sans-serif">1. [小] Test Meiryo: あいうえお山田太郎</h4>
+<h3 style="font-family: Meiryo,Arial, Verdana, sans-serif">1. [中] Test Meiryo: あいうえお山田太郎</h3>
+<h2 style="font-family: Meiryo,Arial, Verdana, sans-serif">1. [大] Test Meiryo: あいうえお山田太郎</h2>
+<h4 style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">2. [小] Test Noto Sans JP: あいうえお山田太郎</h4>
+<h3 style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">2. [中] Test Noto Sans JP: あいうえお山田太郎</h3>
+<h2 style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">2. [大] Test Noto Sans JP: あいうえお山田太郎</h2>
+<h4 style="font-family: Helvetica,Arial, Verdana, sans-serif">3. [小] Test Helvetica: あいうえお山田太郎</h4>
+<h3 style="font-family: Helvetica,Arial, Verdana, sans-serif">3. [中] Test Helvetica: あいうえお山田太郎</h3>
+<h2 style="font-family: Helvetica,Arial, Verdana, sans-serif">3. [大] Test Helvetica: あいうえお山田太郎</h2>
+<hr/>
+<h4 class="bold" style="font-family: Meiryo,Arial, Verdana, sans-serif">4. [小] Test Meiryo: あいうえお山田太郎</h4>
+<h3 class="bold" style="font-family: Meiryo,Arial, Verdana, sans-serif">4. [中] Test Meiryo: あいうえお山田太郎</h3>
+<h2 class="bold" style="font-family: Meiryo,Arial, Verdana, sans-serif">4. [大] Test Meiryo: あいうえお山田太郎</h2>
+<h4 class="bold" style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">5. [小] Test Noto Sans JP: あいうえお山田太郎</h4>
+<h3 class="bold" style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">5. [中] Test Noto Sans JP: あいうえお山田太郎</h3>
+<h2 class="bold" style="font-family: 'Noto Sans JP',Arial, Verdana, sans-serif">5. [大] Test Noto Sans JP: あいうえお山田太郎</h2>
+<h4 class="bold" style="font-family: Helvetica,Arial, Verdana, sans-serif">6. [小] Test Helvetica: あいうえお山田太郎</h4>
+<h3 class="bold" style="font-family: Helvetica,Arial, Verdana, sans-serif">6. [中] Test Helvetica: あいうえお山田太郎</h3>
+<h2 class="bold" style="font-family: Helvetica,Arial, Verdana, sans-serif">6. [大] Test Helvetica: あいうえお山田太郎</h2>
+<hr/>
 <button id="btn">open https</button>
 <button id="btn2">open http</button>
 
