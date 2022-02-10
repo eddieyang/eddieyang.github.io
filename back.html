@@ -6,6 +6,6 @@
 </head>
 <body>
 <script>
-  window.parent.postMessage({ 'type': 'GO_BACK' }, "*");
+  window.parent.postMessage(JSON.stringify({ 'type': 'GO_BACK' }), "*");
 </script>
 </body>
