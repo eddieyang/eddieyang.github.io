@@ -6,6 +6,13 @@
 </head>
 <body>
 <script>
-  window.parent.postMessage(JSON.stringify({ 'type': 'GO_BACK' }), "*");
+  var inIframe = window.location !== window.parent.location;
+  if (inIframe) {
+    window.parent.postMessage(JSON.stringify({ "type": "GO_BACK" }), "*");
+  } else if (window.Android && window.Android.closeWebView) {
+    window.Android.closeWebView();
+  } else {
+    window.close();
+  }
 </script>
 </body>
