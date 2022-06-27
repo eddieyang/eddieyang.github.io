@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2016 Google Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+<head>
+    <meta charset=utf-8/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sign In Example</title>
+
+    <!-- Material Design Theming -->
+    <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.orange-indigo.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"
+            integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
+            crossorigin="anonymous"></script>
+
+    <link rel="stylesheet" href="main.css">
+
+    <!-- <script src="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.js"></script> -->
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.6.1/firebase-ui-auth.css" />
+
+    <style>
+    .grecaptcha-badge {
+        visibility: hidden;
+    }
+    </style>
+</head>
+<body>
+<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+
+    <main class="mdl-layout__content mdl-color--grey-100">
+        <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+
+            <!-- Container for the demo -->
+            <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+                <div class="mdl-card__title mdl-color--light-blue-600 mdl-color-text--white">
+                    <h2 class="mdl-card__title-text">Google Authentication with Redirect</h2>
+                </div>
+                <div class="mdl-card__supporting-text mdl-color-text--grey-600">
+                    <p>Sign in with your Google account below.</p>
+
+                    <!-- Button that handles sign-in/sign-out -->
+                    <button class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-in">
+                      Sign in with Google
+                    </button>
+
+                    <button class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-in-fb">
+                      Sign in with FB
+                    </button>
+
+                    <div style="margin-top: 20px">
+                      <input type="text" id="phone" placeholder="phone" size="20" />
+                      <button class="mdl-button mdl-js-button mdl-button--raised" id="send-btn">
+                        SEND
+                      </button>
+                      <input type="text" id="code" placeholder="code" size="20" />
+                      <button class="mdl-button mdl-js-button mdl-button--raised" id="sms-login-btn">
+                        LOGIN
+                      </button>
+                      <div id="recaptcha-container"></div>
+                    </div>
+
+                    <!-- Container where we'll display the user details -->
+                    <div class="quickstart-user-details-container">
+                        Firebase sign-in status: <span id="quickstart-sign-in-status">Unknown</span>
+                        <div>Firebase auth <code>currentUser</code> object value:</div>
+                        <pre><code id="quickstart-account-details">null</code></pre>
+                        <div>Google OAuth Access Token:</div>
+                        <pre><code id="quickstart-oauthtoken">null</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="firebaseui-auth-container">
+
+        </div>
+    </main>
+
+
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-app.js"></script>
+    <!-- Add Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-auth.js"></script>
+    <!-- <script src="https://www.gstatic.com/firebasejs/8.2.10/firebase-firestore.js"></script> -->
+    <script>
+      function googleBuildAndSignIn(id_token) {
+        // [START auth_google_build_signin]
+        // Build Firebase credential with the Google ID token.
+        var credential = firebase.auth.GoogleAuthProvider.credential(id_token);
+
+        // Sign in with credential from the Google user.
+        firebase.auth().signInWithCredential(credential).catch((error) => {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          // The email of the user's account used.
+          var email = error.email;
+          // The firebase.auth.AuthCredential type that was used.
+          var credential = error.credential;
+          // ...
+        });
+        // [END auth_google_build_signin]
+      }
+
+      // [START auth_google_callback]
+      function onSignIn(googleUser) {
+        console.log("Google Auth Response", googleUser);
+        // We need to register an Observer on Firebase Auth to make sure auth is initialized.
+        var unsubscribe = firebase.auth().onAuthStateChanged((firebaseUser) => {
+          unsubscribe();
+          // Check if we are already signed-in Firebase with the correct user.
+          if (!isUserEqual(googleUser, firebaseUser)) {
+            // Build Firebase credential with the Google ID token.
+            var credential = firebase.auth.GoogleAuthProvider.credential(
+              googleUser.getAuthResponse().id_token);
+
+            // Sign in with credential from the Google user.
+            // [START auth_google_signin_credential]
+            firebase.auth().signInWithCredential(credential).catch((error) => {
+              // Handle Errors here.
+              var errorCode = error.code;
+              var errorMessage = error.message;
+              // The email of the user's account used.
+              var email = error.email;
+              // The firebase.auth.AuthCredential type that was used.
+              var credential = error.credential;
+              // ...
+            });
+            // [END auth_google_signin_credential]
+          } else {
+            console.log("User already signed-in Firebase.");
+          }
+        });
+      }
+
+      // [END auth_google_callback]
+
+      // [START auth_google_checksameuser]
+      function isUserEqual(googleUser, firebaseUser) {
+        if (firebaseUser) {
+          var providerData = firebaseUser.providerData;
+          for (var i = 0; i < providerData.length; i++) {
+            if (providerData[i].providerId === firebase.auth.GoogleAuthProvider.PROVIDER_ID &&
+              providerData[i].uid === googleUser.getBasicProfile().getId()) {
+              // We don't need to reauth the Firebase connection.
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      function signInWithPopup() {
+        firebase.auth()
+          .signInWithPopup(getProvider())
+          .then(async (result) => {
+            /** @type {firebase.auth.OAuthCredential} */
+            var credential = result.credential;
+
+            // This gives you a Google Access Token. You can use it to access the Google API.
+            var token = credential.accessToken;
+            // The signed-in user info.
+            var user = result.user;
+            console.log("signInWithPopup result", result);
+            console.log("signInWithPopup result.credential.accessToken", result.credential.accessToken);
+            console.log("signInWithPopup result.credential.idToken", result.credential.idToken);
+            console.log("signInWithPopup result.user.email", result.user.email);
+            // ...
+
+            const idToken = await user.getIdToken();
+            console.log("signInWithPopup new idToken", idToken);
+          }).catch((error) => {
+            // Handle Errors here.
+            console.log("signInWithPopup catch", error);
+            var errorCode = error.code;
+            var errorMessage = error.message;
+            // The email of the user's account used.
+            var email = error.email;
+            // The firebase.auth.AuthCredential type that was used.
+            var credential = error.credential;
+            // ...
+          });
+      }
+
+      function fireBaseInit() {
+        var firebaseConfig = {
+          //test
+          apiKey: "AIzaSyCFJtgw0uup56FS3htWyc1kSK4z40eYywY",
+          authDomain: "tcg-app-aa4ff.firebaseapp.com",
+          projectId: "tcg-app-aa4ff",
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        firebase.auth().useDeviceLanguage();
+      }
+
+      function getProvider() {
+        var provider = new firebase.auth.GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+        return provider;
+      }
+
+      function getFBProvider() {
+        var provider = new firebase.auth.FacebookAuthProvider();
+        provider.addScope('email');
+        // provider.setCustomParameters({
+        //   auth_type: 'reauthenticate'
+        // });
+        return provider;
+      }
+
+      function signInWithRedirect() {
+        firebase.auth().signInWithRedirect(getProvider());
+      }
+
+      function getRedirectResult() {
+        firebase.auth()
+          .getRedirectResult()
+          .then((result) => {
+            if (result.credential) {
+              /** @type {firebase.auth.OAuthCredential} */
+              var credential = result.credential;
+
+              // This gives you a Google Access Token. You can use it to access the Google API.
+              var token = credential.accessToken;
+              // ...
+              console.log("getRedirectResult result", result);
+              console.log("getRedirectResult result.credential.accessToken", result.credential.accessToken);
+              console.log("getRedirectResult result.credential.idToken", result.credential.idToken);
+              console.log("getRedirectResult result.user.email", result.user.email);
+              console.log("getRedirectResult result.user.email", result.user.uid);
+            }
+            // The signed-in user info.
+            var user = result.user;
+          }).catch((error) => {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          // The email of the user's account used.
+          var email = error.email;
+          // The firebase.auth.AuthCredential type that was used.
+          var credential = error.credential;
+          // ...
+        });
+      }
+
+      // FB popup
+      function fbSignInWithPopup() {
+        firebase
+          .auth()
+          .signInWithPopup(getFBProvider())
+          .then(async (result) => {
+            console.log("fb success");
+            /** @type {firebase.auth.OAuthCredential} */
+            var credential = result.credential;
+
+            // The signed-in user info.
+            var user = result.user;
+
+            // This gives you a Facebook Access Token. You can use it to access the Facebook API.
+            var accessToken = credential.accessToken;
+
+            console.log("fbSignInWithPopup result", result);
+            console.log("fbSignInWithPopup result.credential.accessToken", result.credential.accessToken);
+            console.log("fbSignInWithPopup result.credential.idToken", result.credential.idToken);
+            console.log("fbSignInWithPopup result.user.email", result.user.email);
+            console.log("fbSignInWithPopup result.user.uid", result.user.uid);
+            const idToken = await user.getIdToken();
+            console.log("fbSignInWithPopup new idToken", idToken);
+            // ...
+          })
+          .catch((error) => {
+            // Handle Errors here.
+            var errorCode = error.code;
+            var errorMessage = error.message;
+            // The email of the user's account used.
+            var email = error.email;
+            // The firebase.auth.AuthCredential type that was used.
+            var credential = error.credential;
+
+            // ...
+          });
+      }
+
+      function captcha() {
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    			// 'size': 'invisible',
+          size: 'normal',
+    			'callback': function(response) {
+    				onSignInSubmit();
+    			}
+    		});
+        window.recaptchaVerifier.render().then(function(widgetId) {
+          window.recaptchaWidgetId = widgetId;
+        });
+      }
+
+      function sendSMS() {
+        //var phoneNumber = '含國碼的手機號碼 Ex. +886912345678';
+        var phoneNumber = document.querySelector('#phone').value;
+        var appVerifier = window.recaptchaVerifier;
+        firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier).then(function (confirmationResult) {
+          /* 發送成功 */
+          window.confirmationResult = confirmationResult;
+          console.log('confirmationResult', confirmationResult);
+        }).catch(function (error) {
+          /* 發送失敗 */
+          console.log(error);
+          /* 重置驗證 */
+          // grecaptcha.reset(window.recaptchaWidgetId);
+        });
+      }
+
+      function smsLogin() {
+        var code = document.querySelector('#code').value;
+        /* 檢查驗證碼 */
+        window.confirmationResult.confirm(code).then(async (result) => {
+          var user = result.user;
+          const idToken = await user.getIdToken();
+          console.log("signInWithPopup new idToken", idToken);
+        }).catch(function (error) {
+          /* 驗證失敗 */
+          console.log(error);
+        });
+      }
+
+      $(function() {
+        fireBaseInit();
+        captcha();
+
+        // getRedirectResult();
+        $('#quickstart-sign-in').click(function (e) {
+          signInWithPopup();
+          // signInWithRedirect();
+          // fbSignInWithPopup();
+        });
+        $('#quickstart-sign-in-fb').click(function (e) {
+          fbSignInWithPopup();
+        });
+        $('#send-btn').click(function (e) {
+          sendSMS();
+        });
+        $('#sms-login-btn').click(function (e) {
+          smsLogin();
+        });
+
+//         var ui = new firebaseui.auth.AuthUI(firebase.auth());
+//         ui.start('#firebaseui-auth-container', {
+//           signInOptions: [
+//             firebase.auth.EmailAuthProvider.PROVIDER_ID
+//           ],
+//           // Other config options...
+//         });
+//
+//         // Is there an email link sign-in?
+//         if (ui.isPendingRedirect()) {
+//           ui.start('#firebaseui-auth-container', uiConfig);
+//         }
+// // This can also be done via:
+//         if (firebase.auth().isSignInWithEmailLink(window.location.href)) {
+//           ui.start('#firebaseui-auth-container', uiConfig);
+//         }
+      });
+    </script>
+</div>
+</body>
+</html>
