@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Test - Goldpay</title>
+    <script
+      src="https://code.jquery.com/jquery-3.7.1.min.js"
+      integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      iframe {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100vw;
+        height: 90vh;
+        border: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <label>
+      URL:
+      <input id="url" type="text" value="" />
+      <button id="update">Update</button>
+    </label>
+    <iframe id="deposit" src=""></iframe>
+    <script>
+      $(function () {
+        $("#update").on("click", function (e) {
+          $("#deposit").attr("src", $("#url").val());
+        });
+      });
+    </script>
+  </body>
+</html>
