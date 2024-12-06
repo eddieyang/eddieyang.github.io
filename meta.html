@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Primary Meta Tags -->
+    <title>this is static title</title>
+    <meta name="title" content="this is static title" />
+    <meta name="description" content="this is static desc" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="this is static title" />
+    <meta property="og:description" content="this is static desc" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="this is static title" />
+    <meta property="twitter:description" content="this is static desc" />
+    <!-- Meta Tags Generated with https://metatags.io -->
+  </head>
+  <body>
+    <script>
+      const ogTitle = document.createElement("meta");
+      ogTitle.setAttribute("property", "og:title");
+      ogTitle.content = "test";
+      document.head.appendChild(ogTitle);
+    </script>
+  </body>
+</html>

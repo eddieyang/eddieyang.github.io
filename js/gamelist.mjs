@@ -11,7 +11,7 @@ function sleep(ms) {
 
 function getUrl(page) {
   // 原始 URL
-  let baseUrl = "https://www.111wj3.com/wps/relay/GCSGAME_gameList";
+  let baseUrl = "https://www.tcgdemo.com/wps/relay/GCSGAME_gameList";
 
   // 初始化 URLSearchParams 物件
   let params = new URLSearchParams();
@@ -43,12 +43,12 @@ async function main(page) {
   const list = await fetch(getUrl(page), {
     "headers": {
       "language": "EN",
-      "merchant": "wj33f2",
+      "merchant": "tcgdemov3",
     },
     "body": null,
     "method": "GET",
   }).then(res => res.json());
-  console.log("size", list.value.games.length);
+  console.log("size", list.value.games.length, "totalPages", list.value.totalPages);
   //
   const records = [];
   const timer = setInterval(() => {
@@ -57,6 +57,7 @@ async function main(page) {
   await Promise.all(list.value.games.map(async (game) => {
     return queue.add(async () => {
       if (!game.showIcon) return true;
+      game.showIcon = game.showIcon.replace("images.b240784.com:42666", "images.6929183.com");
       const icon2 = game.showIcon.replace(/rx2\//, '');
       records.push([game.nodeId, game.roomId, game.vassalage, game.gameName || game.nodeName, game.showIcon, icon2, await check200(game.showIcon)])
       return true;
@@ -72,8 +73,9 @@ async function main(page) {
     const sheet = XLSX.utils.aoa_to_sheet([headers, ...output]);
     workbook.appendSheet(sheet, `sheet${page}`);
   }
-  workbook.writeFile(`missing.xlsx`);
+  workbook.writeFile(`missing${page}.xlsx`);
   clearInterval(timer);
+  console.log("done")
 }
 
 // fetch
