@@ -245,7 +245,9 @@
             " | " +
             Object.keys(window)
               .filter((el) => el.startsWith("t") || el.startsWith("T"))
-              .join(", ")
+              .join(", ") +
+            " | navigator.share = " +
+            navigator.share
         );
       });
       $("#get1").on("click", async function () {
