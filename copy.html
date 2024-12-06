@@ -185,6 +185,7 @@
       <br />
       <span class="clipboard text"></span>
     </h5>
+    <button class="install">Install</button>
     <section>
       <button id="copy">
         <strong>Copy</strong>
@@ -208,6 +209,9 @@
     <script>
       $(function () {
         $(".domain").text(window.location.href);
+        $(".install").on("click", function () {
+          window.homeScreenDeferredPrompt.prompt();
+        });
       });
       document.addEventListener(
         "click",
@@ -221,6 +225,16 @@
         },
         { once: true }
       );
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        window.homeScreenDeferredPrompt = e;
+        window.homeScreenDeferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === "accepted") {
+            window.homeScreenDeferredPrompt = null;
+          } else {
+          }
+        });
+      });
     </script>
     <script>
       /** Write contents of the textarea to the clipboard when clicking "Copy" */
