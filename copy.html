@@ -193,12 +193,12 @@
       <span class="ua"></span>
     </h5>
     <h5>
-      typeof window.onbeforeinstallprompt:
-      <span class="onbeforeinstallprompt"></span>
+      Is Telegram:
+      <span class="TelegramWebviewProxy"></span>
     </h5>
     <h5>
-      window.TelegramWebviewProxy:
-      <span class="TelegramWebviewProxy"></span>
+      typeof window.onbeforeinstallprompt:
+      <span class="onbeforeinstallprompt"></span>
     </h5>
 
     <section>
@@ -226,6 +226,13 @@
 
     <div id="toast" hidden></div>
     <script>
+      function getIsTelegram() {
+        return (
+          "TelegramWebview" in window || // Android
+          "TelegramWebviewProxy" in window || // iPhone
+          "TelegramWebviewProxyProto" in window // iPhone
+        );
+      }
       $(function () {
         $(".domain").text(window.location.href);
         $(".install").on("click", function () {
@@ -233,7 +240,7 @@
         });
         $(".ua").text(navigator.userAgent);
         $(".onbeforeinstallprompt").text(typeof window.onbeforeinstallprompt);
-        $(".TelegramWebviewProxy").text(window.TelegramWebviewProxy);
+        $(".TelegramWebviewProxy").text(getIsTelegram());
       });
       $("#get1").on("click", async function () {
         try {
