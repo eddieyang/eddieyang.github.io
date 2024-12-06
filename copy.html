@@ -188,6 +188,14 @@
       <span class="clipboard text"></span>
     </h5>
     <button class="install">Install</button>
+    <h5>
+      UserAgent:
+      <span class="ua"></span>
+    </h5>
+    <h5>
+      typeof window.onbeforeinstallprompt:
+      <span class="onbeforeinstallprompt"></span>
+    </h5>
     <section>
       <button id="copy">
         <strong>Copy</strong>
@@ -218,7 +226,8 @@
         $(".install").on("click", function () {
           window.homeScreenDeferredPrompt.prompt();
         });
-        console.log("paste", window.clipboardData.getData("Text"));
+        $(".ua").text(navigator.userAgent);
+        $(".onbeforeinstallprompt").text(typeof window.onbeforeinstallprompt);
       });
       $("#get1").on("click", async function () {
         try {
