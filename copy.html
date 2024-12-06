@@ -181,7 +181,9 @@
     </h5>
     <h5 class="paste-h5">
       Current Clipboard:
-      <button>Get</button>
+      <br />
+      <button id="get1">Get1</button>
+      <button id="get2">Get2</button>
       <br />
       <span class="clipboard text"></span>
     </h5>
@@ -212,19 +214,32 @@
         $(".install").on("click", function () {
           window.homeScreenDeferredPrompt.prompt();
         });
+        console.log("paste", window.clipboardData.getData("Text"));
       });
-      document.addEventListener(
-        "click",
-        async () => {
-          try {
-            const text = await navigator.clipboard.readText();
-            $(".clipboard").text(text);
-          } catch (e) {
-            $(".clipboard").text(e.toString());
+      $("#get1").on("click", async function () {
+        try {
+          const text = await navigator.clipboard.readText();
+          $(".clipboard").text(text);
+        } catch (e) {
+          $(".clipboard").text(e.toString());
+        }
+      });
+      $("#get2").on("click", async function () {
+        try {
+          let clipboardContents = await navigator.clipboard.read();
+          for (const mimeType of clipboardContents) {
+            if (mimeType.types.includes("text/plain")) {
+              const blob = await mimeType.getType("text/plain");
+              const text = await blob.text();
+              $(".clipboard").text(text);
+              break;
+            }
           }
-        },
-        { once: true }
-      );
+        } catch (e) {
+          $(".clipboard").text(e.toString());
+        }
+      });
+      document.addEventListener("click", async () => {}, { once: true });
       window.addEventListener("beforeinstallprompt", function (e) {
         e.preventDefault();
         window.homeScreenDeferredPrompt = e;
