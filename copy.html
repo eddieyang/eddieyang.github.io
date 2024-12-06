@@ -196,6 +196,11 @@
       typeof window.onbeforeinstallprompt:
       <span class="onbeforeinstallprompt"></span>
     </h5>
+    <h5>
+      window.TelegramWebviewProxy:
+      <span class="TelegramWebviewProxy"></span>
+    </h5>
+
     <section>
       <button id="copy">
         <strong>Copy</strong>
@@ -228,6 +233,7 @@
         });
         $(".ua").text(navigator.userAgent);
         $(".onbeforeinstallprompt").text(typeof window.onbeforeinstallprompt);
+        $(".TelegramWebviewProxy").text(window.TelegramWebviewProxy);
       });
       $("#get1").on("click", async function () {
         try {
