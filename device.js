@@ -106,3 +106,36 @@ function getCanvasFingerprint() {
   // 獲取畫布數據 URL，返回作為指紋
   return canvas.toDataURL();
 }
+
+function getCanvasFingerprint2() {
+  // create a canvas element
+  var canvas = document.createElement("canvas");
+
+  // define a context var that will be used for browsers with canvas support
+  var ctx;
+
+  // try/catch for older browsers that don't support the canvas element
+  try {
+    // attempt to give ctx a 2d canvas context value
+    ctx = canvas.getContext("2d");
+  } catch (e) {
+    // return empty string if canvas element not supported
+    return "";
+  }
+
+  // https://www.browserleaks.com/canvas#how-does-it-work
+  // Text with lowercase/uppercase/punctuation symbols
+  var txt = "ClientJS,org <canvas> 1.0";
+  ctx.textBaseline = "top";
+  // The most common type
+  ctx.font = "14px 'Arial'";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#f60";
+  ctx.fillRect(125, 1, 62, 20);
+  // Some tricks for color mixing to increase the difference in rendering
+  ctx.fillStyle = "#069";
+  ctx.fillText(txt, 2, 15);
+  ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+  ctx.fillText(txt, 4, 17);
+  return canvas.toDataURL();
+}

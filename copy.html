@@ -197,6 +197,11 @@
       <div><img class="fingerprint-img" src="" /></div>
     </h5>
     <h5 class="domain-h5">
+      Fingerprint Canvas hash2:
+      <span class="canvas-hash2 text"></span>
+      <div><img class="fingerprint-img2" src="" /></div>
+    </h5>
+    <h5 class="domain-h5">
       Current URL:
       <span class="domain text"></span>
     </h5>
@@ -261,6 +266,11 @@
           const c = getCanvasFingerprint();
           $(".fingerprint-img").attr("src", c);
           doubleHashID(c).then((result) => $(".canvas-hash").text(result));
+
+          // test
+          const c2 = getCanvasFingerprint2();
+          $(".fingerprint-img2").attr("src", c2);
+          doubleHashID(c2).then((result) => $(".canvas-hash2").text(result));
         });
         $(".domain").text(window.location.href);
         $(".install").on("click", function () {
