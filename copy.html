@@ -172,9 +172,26 @@
       integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0="
       crossorigin="anonymous"
     ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"
+      integrity="sha512-a+SUDuwNzXDvz4XrIcXHuCf089/iJAoN4lmrXJg18XnduKK6YlDHNRalv4yd1N40OKI80tFidF+rqTFKGPoWFQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/device.js"></script>
   </head>
   <body>
     <h1>Async Clipboard API Demo</h1>
+    <div><button class="install">Install</button></div>
+    <h5 class="domain-h5">
+      UUID:
+      <span class="uuid text"></span>
+    </h5>
+    <h5 class="domain-h5">
+      Fingerprint:
+      <span class="fingerprint text"></span>
+      <img class="fingerprint-img" src="" />
+    </h5>
     <h5 class="domain-h5">
       Current URL:
       <span class="domain text"></span>
@@ -187,7 +204,6 @@
       <br />
       <span class="clipboard text"></span>
     </h5>
-    <button class="install">Install</button>
     <h5>
       UserAgent:
       <span class="ua"></span>
@@ -234,6 +250,11 @@
         );
       }
       $(function () {
+        doubleHashID(getBrowserFingerprint()).then(function (result) {
+          $(".uuid").text(result);
+          $(".fingerprint").text(getBrowserFingerprint(false));
+          $(".fingerprint-img").attr("src", getCanvasFingerprint());
+        });
         $(".domain").text(window.location.href);
         $(".install").on("click", function () {
           window.homeScreenDeferredPrompt.prompt();
