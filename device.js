@@ -70,23 +70,39 @@ function getBrowserFingerprint(useCanvas = true) {
 }
 
 function getCanvasFingerprint() {
-  // 創建一個隱藏的 <canvas> 元素
+  // 創建畫布元素
   const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d"); // 獲取 2D 畫布上下文
+  const ctx = canvas.getContext("2d");
 
-  // 設置填充樣式並繪製矩形
-  ctx.fillStyle = "rgba(102, 204, 0, 0.7)"; // 半透明綠色
-  ctx.fillRect(125, 1, 62, 20); // 繪製一個矩形
+  // 設置畫布大小，較小即可
+  canvas.width = 200;
+  canvas.height = 50;
 
-  // 設置文字樣式並繪製文字
-  ctx.fillStyle = "#069"; // 深藍色
-  ctx.font = "16px Arial"; // 字體樣式
-  ctx.fillText("Hello, world!", 2, 15); // 繪製文本
+  // 繪製矩形和漸變
+  const gradient = ctx.createLinearGradient(0, 0, 200, 50);
+  gradient.addColorStop(0, "#FF0000"); // 紅色
+  gradient.addColorStop(0.5, "#00FF00"); // 綠色
+  gradient.addColorStop(1, "#0000FF"); // 藍色
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 200, 50); // 填滿整個畫布
 
-  // 再次繪製文字以強調變化
-  ctx.fillStyle = "#f60"; // 橙色
-  ctx.fillText("Hello, world!", 4, 17); // 偏移一點位置
+  // 繪製文字
+  ctx.font = "20px Arial";
+  ctx.fillStyle = "#FFFFFF"; // 白色
+  ctx.fillText("Fingerprint Test", 10, 30);
 
-  // 將畫布的像素數據轉換為 Base64 編碼的數據 URL
+  // 繪製陰影效果
+  ctx.shadowColor = "#000000"; // 黑色陰影
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetX = 3;
+  ctx.shadowOffsetY = 3;
+  ctx.fillText("Shadow Text", 10, 45);
+
+  // 繪製透明圖形
+  ctx.globalAlpha = 0.5; // 設置透明度
+  ctx.fillStyle = "#FF00FF"; // 紫色
+  ctx.fillRect(50, 10, 100, 30);
+
+  // 獲取畫布數據 URL，返回作為指紋
   return canvas.toDataURL();
 }
