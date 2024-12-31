@@ -110,6 +110,8 @@ function getCanvasFingerprint() {
 function getCanvasFingerprint2() {
   // create a canvas element
   var canvas = document.createElement("canvas");
+  canvas.width = 250;
+  canvas.height = 30;
 
   // define a context var that will be used for browsers with canvas support
   var ctx;

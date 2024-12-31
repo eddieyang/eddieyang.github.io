@@ -178,7 +178,8 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-    <script src="/device.js"></script>
+    <script src="/js/device.js"></script>
+    <script src="/js/webgl.js"></script>
   </head>
   <body>
     <h1>Async Clipboard API Demo</h1>
@@ -200,6 +201,13 @@
       Fingerprint Canvas hash2:
       <span class="canvas-hash2 text"></span>
       <div><img class="fingerprint-img2" src="" /></div>
+    </h5>
+    <h5 class="domain-h5">
+      WEBGL hash:
+      <span class="webgl-hash1 text"></span>
+      <br />
+      WEBGL features:
+      <span class="webgl-hash2 text"></span>
     </h5>
     <h5 class="domain-h5">
       Current URL:
@@ -271,6 +279,11 @@
           const c2 = getCanvasFingerprint2();
           $(".fingerprint-img2").attr("src", c2);
           doubleHashID(c2).then((result) => $(".canvas-hash2").text(result));
+
+          // webgl
+          const c3 = generateFingerprintWebgl();
+          $(".webgl-hash1").text(getWebGLInfo());
+          doubleHashID(c3).then((result) => $(".webgl-hash2").text(result));
         });
         $(".domain").text(window.location.href);
         $(".install").on("click", function () {
