@@ -487,27 +487,35 @@
     </script>
     <script>
       $(function () {
-        const dom = document.createElement("iframe");
-
+        // const dom = document.createElement("iframe");
+        //
         const listener = (e) => {
           try {
             const obj = JSON.parse(e.data);
             if (obj?.type === "DEVICE_ID" && obj?.value) {
               $(".c-uuid").text(obj.value);
               window.removeEventListener("message", listener);
-              dom.remove();
+              // dom.remove();
+              window?.w?.close?.();
             }
           } catch {}
         };
         window.addEventListener("message", listener);
-
         //
-        dom.src = `https://images.21947392.com/TCG_PROD_IMAGES/B2C/libs/device.origin.html`;
-        dom.style.display = "none";
-        dom.style.position = "absolute";
-        dom.style.bottom = "0";
-        dom.style.right = "0";
-        document.body.appendChild(dom);
+        // //
+        // dom.src = `https://images.21947392.com/TCG_PROD_IMAGES/B2C/libs/device.origin.html`;
+        // dom.style.display = "none";
+        // dom.style.position = "absolute";
+        // dom.style.bottom = "0";
+        // dom.style.right = "0";
+        // document.body.appendChild(dom);
+        document.addEventListener(
+          "click",
+          () => {
+            window.w = window.open("https://images.21947392.com/TCG_PROD_IMAGES/B2C/libs/device.origin3.html");
+          },
+          { once: true }
+        );
       });
     </script>
   </body>
