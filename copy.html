@@ -188,6 +188,10 @@
       <span class="uuid text"></span>
     </h5>
     <h5 class="domain-h5">
+      IMGCDN UUID:
+      <span class="c-uuid text"></span>
+    </h5>
+    <h5 class="domain-h5">
       Fingerprint:
       <span class="fingerprint text"></span>
     </h5>
@@ -480,6 +484,31 @@
           toast.hidden = true;
         }, 3000);
       }
+    </script>
+    <script>
+      $(function () {
+        const dom = document.createElement("iframe");
+
+        const listener = (e) => {
+          try {
+            const obj = JSON.parse(e.data);
+            if (obj?.type === "DEVICE_ID" && obj?.value) {
+              $(".c-uuid").text(obj.value);
+              window.removeEventListener("message", listener);
+              dom.remove();
+            }
+          } catch {}
+        };
+        window.addEventListener("message", listener);
+
+        //
+        dom.src = `https://images.21947392.com/TCG_PROD_IMAGES/B2C/libs/device.html`;
+        dom.style.display = "none";
+        dom.style.position = "absolute";
+        dom.style.bottom = "0";
+        dom.style.right = "0";
+        document.body.appendChild(dom);
+      });
     </script>
   </body>
 </html>
