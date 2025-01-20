@@ -15,7 +15,6 @@
         padding: 0;
         margin: 0;
         background: #eee;
-        overflow: hidden;
         text-align: center;
       }
       h1 {
@@ -233,6 +232,64 @@
       typeof window.onbeforeinstallprompt:
       <span class="onbeforeinstallprompt"></span>
     </h5>
+
+    <h2>Cookies</h2>
+    <ul id="cookie-list"></ul>
+    <button id="get-cookie">Refresh</button>
+    <button id="set-cookie">Set</button>
+    <button id="clear-cookie">Clear Cookie</button>
+
+    <script>
+      function setCookie(name, value, days) {
+        var expires = "";
+        if (days) {
+          var date = new Date();
+          date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+          expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + encodeURIComponent(value) + expires + "; path=/";
+      }
+      function clearCookies() {
+        var cookies = document.cookie.split("; ");
+        cookies.forEach(function (cookie) {
+          var key = cookie.split("=")[0];
+          document.cookie = key + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/";
+        });
+        getCookies(); // 更新畫面
+      }
+      function getCookies() {
+        var cookies = document.cookie.split("; ");
+        var $list = $("#cookie-list");
+        $list.empty(); // 清空舊的列表
+
+        if (cookies.length === 1 && cookies[0] === "") {
+          $list.append("<li>無可用的 Cookie</li>");
+        } else {
+          cookies.forEach(function (cookie) {
+            var parts = cookie.split("=");
+            var key = parts[0];
+            var value = decodeURIComponent(parts.slice(1).join("=")); // 處理有 `=` 的值
+            $list.append("<li><strong>" + key + ":</strong> " + value + "</li>");
+          });
+        }
+      }
+      $(function () {
+        // 取得所有 cookie 並解析
+        getCookies();
+
+        $("#get-cookie").on("click", function () {
+          getCookies();
+        });
+        $("#set-cookie").on("click", function () {
+          console.log("set cookie");
+          setCookie("test", "123", 7); // 設定 Cookie，保存 7 天
+          getCookies(); // 更新 Cookie 顯示
+        });
+        $("#clear-cookie").on("click", function () {
+          clearCookies(); // 清除所有 Cookie
+        });
+      });
+    </script>
 
     <section>
       <button id="copy">
