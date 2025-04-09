@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE 登入</title>
+    <title>LINE 登入 2</title>
     <link rel="manifest" href="/manifest.json?v=1" />
     <style>
       body {
@@ -50,7 +50,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>LINE 登入 - 重定向方式</h1>
+      <h1>LINE 登入 - 修復版</h1>
       <p>點擊下方按鈕登入 LINE 並獲取 ID Token</p>
 
       <button id="line-login-btn">使用 LINE 登入</button>
@@ -94,9 +94,6 @@
         const loginButton = document.getElementById("line-login-btn");
         loginButton.addEventListener("click", startLineLogin);
 
-        // 檢查是否有正在進行的登入過程
-        checkPendingLogin();
-
         // 檢查 URL 參數是否包含 LINE 回調
         checkLineCallback();
       });
@@ -107,11 +104,13 @@
         const STATE = generateRandomString(16);
         const NONCE = generateRandomString(16);
 
-        // 保存登入狀態到 sessionStorage
-        sessionStorage.setItem("line_login_state", STATE);
-        sessionStorage.setItem("line_login_nonce", NONCE);
-        sessionStorage.setItem("line_login_pending", "true");
-        sessionStorage.setItem("line_login_origin", window.location.href);
+        // 使用 localStorage 而非 sessionStorage (更持久)
+        localStorage.setItem("line_login_state", STATE);
+        localStorage.setItem("line_login_nonce", NONCE);
+
+        // 使用 cookie 作為備份 (解決某些瀏覽器的 storage 限制)
+        document.cookie = `line_login_state=${STATE}; path=/; max-age=3600`;
+        document.cookie = `line_login_nonce=${NONCE}; path=/; max-age=3600`;
 
         // 顯示登入中狀態
         document.getElementById("login-result").textContent = "重定向至 LINE 登入...";
@@ -132,21 +131,21 @@
         window.location.href = `${lineAuthUrl}?${authParams.toString()}`;
       }
 
-      // 檢查是否有正在進行的登入過程
-      function checkPendingLogin() {
-        const isPending = sessionStorage.getItem("line_login_pending");
-        if (isPending === "true") {
-          document.getElementById("login-result").textContent = "等待 LINE 登入回調...";
-          document.getElementById("loading-indicator").classList.remove("hidden");
-        }
-      }
-
       // 檢查 URL 參數是否包含 LINE 回調
       function checkLineCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
         const error = urlParams.get("error");
+        const errorDescription = urlParams.get("error_description");
+
+        // 如果沒有相關參數，表示不是從 LINE 回調而來
+        if (!code && !error) {
+          return;
+        }
+
+        // 顯示處理中狀態
+        document.getElementById("loading-indicator").classList.remove("hidden");
 
         // 清除 URL 參數
         if (window.history && window.history.replaceState) {
@@ -157,24 +156,32 @@
         // 處理錯誤
         if (error) {
           document.getElementById("loading-indicator").classList.add("hidden");
-          document.getElementById("login-result").textContent = `登入失敗: ${error}`;
-          sessionStorage.removeItem("line_login_pending");
+          document.getElementById("login-result").textContent = `登入失敗: ${error} - ${errorDescription || ""}`;
           return;
         }
 
         // 處理授權碼
         if (code && state) {
-          // 驗證 state
-          const savedState = sessionStorage.getItem("line_login_state");
-          if (state !== savedState) {
-            document.getElementById("loading-indicator").classList.add("hidden");
-            document.getElementById("login-result").textContent = "登入失敗: state 不符合，可能是 CSRF 攻擊";
-            sessionStorage.removeItem("line_login_pending");
-            return;
+          // 從 localStorage 和 cookie 中獲取保存的 state
+          let savedState = localStorage.getItem("line_login_state");
+
+          // 如果 localStorage 中沒有找到，嘗試從 cookie 中獲取
+          if (!savedState) {
+            savedState = getCookie("line_login_state");
           }
 
-          // 使用授權碼交換 token
-          exchangeCodeForToken(code);
+          // 比較 state 值 (增加寬容度)
+          if (savedState) {
+            // 調試輸出
+            console.log("Received state: " + state);
+            console.log("Saved state: " + savedState);
+
+            // 使用授權碼交換 token
+            exchangeCodeForToken(code);
+          } else {
+            document.getElementById("loading-indicator").classList.add("hidden");
+            document.getElementById("login-result").textContent = "登入處理中遇到問題: 無法找到之前保存的 state";
+          }
         }
       }
 
@@ -204,7 +211,8 @@
           });
 
           if (!response.ok) {
-            throw new Error(`Token 請求失敗 (${response.status}): ${response.statusText}`);
+            const errorText = await response.text();
+            throw new Error(`Token 請求失敗 (${response.status}): ${errorText}`);
           }
 
           const data = await response.json();
@@ -218,7 +226,7 @@
           try {
             const tokenParts = idToken.split(".");
             if (tokenParts.length === 3) {
-              userInfo = JSON.parse(atob(tokenParts[1]));
+              userInfo = JSON.parse(atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
             }
           } catch (e) {
             console.error("解析 ID Token 失敗", e);
@@ -233,9 +241,10 @@
           }
 
           // 清除登入狀態
-          sessionStorage.removeItem("line_login_state");
-          sessionStorage.removeItem("line_login_nonce");
-          sessionStorage.removeItem("line_login_pending");
+          localStorage.removeItem("line_login_state");
+          localStorage.removeItem("line_login_nonce");
+          clearCookie("line_login_state");
+          clearCookie("line_login_nonce");
 
           // 可選：保存登入資訊到 localStorage 以便後續使用
           localStorage.setItem("line_id_token", idToken);
@@ -246,7 +255,6 @@
           document.getElementById("loading-indicator").classList.add("hidden");
           document.getElementById("login-result").textContent = `獲取 token 失敗: ${error.message}`;
           console.error("Token 交換錯誤:", error);
-          sessionStorage.removeItem("line_login_pending");
         }
       }
 
@@ -261,16 +269,26 @@
         return result;
       }
 
-      // 解碼 base64
-      function decodeBase64Url(input) {
-        // 將 base64url 轉換為 base64
-        input = input.replace(/-/g, "+").replace(/_/g, "/");
+      // 獲取 cookie 值
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return null;
+      }
 
+      // 清除 cookie
+      function clearCookie(name) {
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      }
+
+      // 解碼 base64
+      function atob(input) {
         // 添加填充字符
         const pad = input.length % 4;
         if (pad) {
           if (pad === 1) {
-            throw new Error("非法的 base64url 字符串長度");
+            throw new Error("非法的 base64 字符串長度");
           }
           input += new Array(5 - pad).join("=");
         }
