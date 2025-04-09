@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LINE 登入 - 彈出視窗範例</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      .container {
+        text-align: center;
+        margin-top: 50px;
+      }
+      button {
+        background-color: #06c755;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 20px;
+      }
+      button:hover {
+        background-color: #05a847;
+      }
+      pre {
+        background-color: #f4f4f4;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        text-align: left;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      #token-info {
+        margin-top: 20px;
+        text-align: left;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>LINE 登入 - 彈出視窗範例</h1>
+      <p>點擊下方按鈕透過彈出視窗登入 LINE 並獲取 ID Token</p>
+
+      <button id="line-login-btn">使用 LINE 登入</button>
+
+      <div id="token-info">
+        <h3>登入狀態：</h3>
+        <pre id="login-result">尚未登入</pre>
+
+        <h3>ID Token：</h3>
+        <pre id="id-token">尚未獲取</pre>
+
+        <h3>用戶資訊：</h3>
+        <pre id="user-info">尚未獲取</pre>
+      </div>
+    </div>
+
+    <script>
+      // LINE 開發者設定
+      const CLIENT_ID = "1660878021"; // 請替換為您的 LINE Client ID
+
+      // 主頁面 JS
+      document.addEventListener("DOMContentLoaded", function () {
+        // 獲取登入按鈕並添加點擊事件
+        const loginButton = document.getElementById("line-login-btn");
+        loginButton.addEventListener("click", openLineLoginPopup);
+
+        // 處理來自彈出視窗的消息
+        window.addEventListener("message", function (event) {
+          // 驗證消息來源（可以設置為您預期的域名）
+          // if (event.origin !== "https://yourexpectedorigin.com") return;
+
+          const data = event.data;
+
+          // 確保消息是 LINE 登入相關的
+          if (data.type === "line-login-success") {
+            document.getElementById("login-result").textContent = "登入成功！";
+            document.getElementById("id-token").textContent = data.idToken;
+
+            // 如果有用戶信息，顯示它
+            if (data.userInfo) {
+              document.getElementById("user-info").textContent = JSON.stringify(data.userInfo, null, 2);
+            }
+          } else if (data.type === "line-login-error") {
+            document.getElementById("login-result").textContent = "登入失敗：" + data.error;
+          }
+        });
+      });
+
+      // 打開 LINE 登入彈出視窗
+      function openLineLoginPopup() {
+        // 產生隨機 state 和 nonce
+        const STATE = generateRandomString(16);
+        const NONCE = generateRandomString(16);
+
+        // 設置彈出視窗的尺寸和位置
+        const width = 450;
+        const height = 600;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+
+        // 創建 LINE 登入 URL
+        const redirectUri = window.location.origin + "/line-callback.html"; // 您需要創建這個回調頁面
+
+        // LINE 授權 URL
+        const lineAuthUrl = "https://access.line.me/oauth2/v2.1/authorize";
+
+        // 授權參數
+        const authParams = new URLSearchParams({
+          response_type: "code",
+          client_id: CLIENT_ID,
+          redirect_uri: redirectUri,
+          state: STATE,
+          scope: "profile openid email",
+          nonce: NONCE,
+        });
+
+        // 打開彈出視窗
+        const popupWindow = window.open(
+          `${lineAuthUrl}?${authParams.toString()}`,
+          "lineLoginWindow",
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+
+        // 存儲 state 和 nonce 到 localStorage 以便回調頁面使用
+        localStorage.setItem("line_login_state", STATE);
+        localStorage.setItem("line_login_nonce", NONCE);
+
+        // 定期檢查彈出視窗是否關閉
+        const checkPopupClosed = setInterval(function () {
+          if (popupWindow && popupWindow.closed) {
+            clearInterval(checkPopupClosed);
+            // 如果用戶關閉視窗且沒有成功登入
+            if (document.getElementById("login-result").textContent === "尚未登入") {
+              document.getElementById("login-result").textContent = "登入已取消";
+            }
+          }
+        }, 500);
+      }
+
+      // 產生隨機字符串用於 state 和 nonce
+      function generateRandomString(length) {
+        let result = "";
+        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const charactersLength = characters.length;
+        for (let i = 0; i < length; i++) {
+          result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        return result;
+      }
+    </script>
+  </body>
+</html>

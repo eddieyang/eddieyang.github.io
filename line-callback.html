@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LINE 登入回調處理</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        text-align: center;
+        padding: 40px 20px;
+        line-height: 1.6;
+      }
+      .loader {
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #06c755;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      #status-message {
+        margin-top: 20px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>LINE 登入驗證中...</h2>
+    <div class="loader"></div>
+    <div id="status-message">正在處理登入資訊，請稍候...</div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        processLineCallback();
+      });
+
+      // 處理 LINE 回調
+      async function processLineCallback() {
+        try {
+          // 獲取 URL 參數
+          const urlParams = new URLSearchParams(window.location.search);
+          const code = urlParams.get("code");
+          const state = urlParams.get("state");
+          const error = urlParams.get("error");
+          const errorDescription = urlParams.get("error_description");
+
+          // 檢查是否有錯誤
+          if (error) {
+            document.getElementById("status-message").textContent = `登入失敗: ${error} - ${errorDescription || ""}`;
+            sendMessageToOpener({
+              type: "line-login-error",
+              error: errorDescription || error,
+            });
+            setTimeout(function () {
+              window.close();
+            }, 2000);
+            return;
+          }
+
+          // 確保有 code 和 state
+          if (!code || !state) {
+            document.getElementById("status-message").textContent = "登入失敗: 缺少必要參數";
+            sendMessageToOpener({
+              type: "line-login-error",
+              error: "缺少必要參數",
+            });
+            setTimeout(function () {
+              window.close();
+            }, 2000);
+            return;
+          }
+
+          // 從 opener window 獲取 state 進行驗證
+          if (window.opener) {
+            const savedState = window.opener.localStorage.getItem("line_login_state");
+            if (state !== savedState) {
+              document.getElementById("status-message").textContent = "登入失敗: state 不符合，可能是 CSRF 攻擊";
+              sendMessageToOpener({
+                type: "line-login-error",
+                error: "state 驗證失敗",
+              });
+              setTimeout(function () {
+                window.close();
+              }, 2000);
+              return;
+            }
+          } else {
+            document.getElementById("status-message").textContent = "登入失敗: 無法訪問 opener 視窗";
+            setTimeout(function () {
+              window.close();
+            }, 2000);
+            return;
+          }
+
+          // LINE API 設定 (從 opener 獲取或使用預設值)
+          const CLIENT_ID = "1660878021"; // 理想情況下應從 opener 獲取
+          const CLIENT_SECRET = "2cd9efafa9728edb5f79cb71af8a07da"; // 注意：在實際應用中應由後端處理
+
+          // 獲取回調 URI (應與初始請求中使用的 URI 相同)
+          const REDIRECT_URI = window.location.origin + "/line-callback.html";
+
+          // 交換 code 獲取 token
+          document.getElementById("status-message").textContent = "正在獲取 Token...";
+
+          // 準備 token 請求
+          const tokenUrl = "https://api.line.me/oauth2/v2.1/token";
+          const formData = new URLSearchParams();
+          formData.append("grant_type", "authorization_code");
+          formData.append("code", code);
+          formData.append("redirect_uri", REDIRECT_URI);
+          formData.append("client_id", CLIENT_ID);
+          formData.append("client_secret", CLIENT_SECRET);
+
+          // 發送 token 請求
+          const tokenResponse = await fetch(tokenUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+          });
+
+          if (!tokenResponse.ok) {
+            throw new Error(`Token 請求失敗: ${tokenResponse.status} ${tokenResponse.statusText}`);
+          }
+
+          const tokenData = await tokenResponse.json();
+          const idToken = tokenData.id_token;
+          const accessToken = tokenData.access_token;
+
+          // 驗證 nonce (在實際應用中應解碼 JWT 並驗證 nonce)
+          // const savedNonce = window.opener.localStorage.getItem('line_login_nonce');
+
+          // 清除 opener 的 localStorage 中的臨時狀態
+          window.opener.localStorage.removeItem("line_login_state");
+          window.opener.localStorage.removeItem("line_login_nonce");
+
+          // 解析 ID Token
+          let userInfo = null;
+          try {
+            const tokenParts = idToken.split(".");
+            if (tokenParts.length === 3) {
+              userInfo = JSON.parse(atob(tokenParts[1]));
+            }
+          } catch (e) {
+            console.error("解析 ID Token 失敗", e);
+          }
+
+          // 向主視窗傳送成功消息
+          document.getElementById("status-message").textContent = "登入成功！正在關閉視窗...";
+          sendMessageToOpener({
+            type: "line-login-success",
+            idToken: idToken,
+            accessToken: accessToken,
+            userInfo: userInfo,
+          });
+
+          // 關閉彈出視窗
+          setTimeout(function () {
+            window.close();
+          }, 1000);
+        } catch (error) {
+          document.getElementById("status-message").textContent = `發生錯誤: ${error.message}`;
+          sendMessageToOpener({
+            type: "line-login-error",
+            error: error.message,
+          });
+          setTimeout(function () {
+            window.close();
+          }, 2000);
+        }
+      }
+
+      // 向 opener 視窗發送消息
+      function sendMessageToOpener(data) {
+        if (window.opener) {
+          window.opener.postMessage(data, "*"); // 在生產環境中，應指定確切的目標域名而非 '*'
+        }
+      }
+    </script>
+  </body>
+</html>
