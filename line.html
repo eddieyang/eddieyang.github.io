@@ -3,10 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE 登入 - 彈出視窗範例</title>
+    <title>LINE 登入</title>
+    <link rel="manifest" href="/manifest.json?v=1" />
     <style>
       body {
-        font-family: "Arial", sans-serif;
+        font-family: sans-serif;
         max-width: 800px;
         margin: 0 auto;
         padding: 20px;
@@ -42,12 +43,15 @@
         margin-top: 20px;
         text-align: left;
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>LINE 登入 - 彈出視窗範例</h1>
-      <p>點擊下方按鈕透過彈出視窗登入 LINE 並獲取 ID Token</p>
+      <h1>LINE 登入 - 重定向方式</h1>
+      <p>點擊下方按鈕登入 LINE 並獲取 ID Token</p>
 
       <button id="line-login-btn">使用 LINE 登入</button>
 
@@ -61,89 +65,189 @@
         <h3>用戶資訊：</h3>
         <pre id="user-info">尚未獲取</pre>
       </div>
+
+      <!-- 登入中旋轉圖示 -->
+      <div id="loading-indicator" class="hidden">
+        <div
+          style="
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #06c755;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+          "
+        ></div>
+        <p>登入處理中，請稍候...</p>
+      </div>
     </div>
 
     <script>
       // LINE 開發者設定
       const CLIENT_ID = "1660878021"; // 請替換為您的 LINE Client ID
+      const REDIRECT_URI = window.location.origin + window.location.pathname; // 當前頁面作為回調地址
 
-      // 主頁面 JS
+      // 頁面加載時執行
       document.addEventListener("DOMContentLoaded", function () {
         // 獲取登入按鈕並添加點擊事件
         const loginButton = document.getElementById("line-login-btn");
-        loginButton.addEventListener("click", openLineLoginPopup);
+        loginButton.addEventListener("click", startLineLogin);
 
-        // 處理來自彈出視窗的消息
-        window.addEventListener("message", function (event) {
-          // 驗證消息來源（可以設置為您預期的域名）
-          // if (event.origin !== "https://yourexpectedorigin.com") return;
+        // 檢查是否有正在進行的登入過程
+        checkPendingLogin();
 
-          const data = event.data;
-
-          // 確保消息是 LINE 登入相關的
-          if (data.type === "line-login-success") {
-            document.getElementById("login-result").textContent = "登入成功！";
-            document.getElementById("id-token").textContent = data.idToken;
-
-            // 如果有用戶信息，顯示它
-            if (data.userInfo) {
-              document.getElementById("user-info").textContent = JSON.stringify(data.userInfo, null, 2);
-            }
-          } else if (data.type === "line-login-error") {
-            document.getElementById("login-result").textContent = "登入失敗：" + data.error;
-          }
-        });
+        // 檢查 URL 參數是否包含 LINE 回調
+        checkLineCallback();
       });
 
-      // 打開 LINE 登入彈出視窗
-      function openLineLoginPopup() {
-        // 產生隨機 state 和 nonce
+      // 開始 LINE 登入流程
+      function startLineLogin() {
+        // 生成 state 和 nonce
         const STATE = generateRandomString(16);
         const NONCE = generateRandomString(16);
 
-        // 設置彈出視窗的尺寸和位置
-        const width = 450;
-        const height = 600;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
+        // 保存登入狀態到 sessionStorage
+        sessionStorage.setItem("line_login_state", STATE);
+        sessionStorage.setItem("line_login_nonce", NONCE);
+        sessionStorage.setItem("line_login_pending", "true");
+        sessionStorage.setItem("line_login_origin", window.location.href);
 
-        // 創建 LINE 登入 URL
-        const redirectUri = window.location.origin + "/line-callback.html"; // 您需要創建這個回調頁面
+        // 顯示登入中狀態
+        document.getElementById("login-result").textContent = "重定向至 LINE 登入...";
+        document.getElementById("loading-indicator").classList.remove("hidden");
 
-        // LINE 授權 URL
+        // 構建 LINE 授權 URL
         const lineAuthUrl = "https://access.line.me/oauth2/v2.1/authorize";
-
-        // 授權參數
         const authParams = new URLSearchParams({
           response_type: "code",
           client_id: CLIENT_ID,
-          redirect_uri: redirectUri,
+          redirect_uri: REDIRECT_URI,
           state: STATE,
           scope: "profile openid email",
           nonce: NONCE,
         });
 
-        // 打開彈出視窗
-        const popupWindow = window.open(
-          `${lineAuthUrl}?${authParams.toString()}`,
-          "lineLoginWindow",
-          `width=${width},height=${height},left=${left},top=${top}`
-        );
+        // 重定向到 LINE 登入頁面
+        window.location.href = `${lineAuthUrl}?${authParams.toString()}`;
+      }
 
-        // 存儲 state 和 nonce 到 localStorage 以便回調頁面使用
-        localStorage.setItem("line_login_state", STATE);
-        localStorage.setItem("line_login_nonce", NONCE);
+      // 檢查是否有正在進行的登入過程
+      function checkPendingLogin() {
+        const isPending = sessionStorage.getItem("line_login_pending");
+        if (isPending === "true") {
+          document.getElementById("login-result").textContent = "等待 LINE 登入回調...";
+          document.getElementById("loading-indicator").classList.remove("hidden");
+        }
+      }
 
-        // 定期檢查彈出視窗是否關閉
-        const checkPopupClosed = setInterval(function () {
-          if (popupWindow && popupWindow.closed) {
-            clearInterval(checkPopupClosed);
-            // 如果用戶關閉視窗且沒有成功登入
-            if (document.getElementById("login-result").textContent === "尚未登入") {
-              document.getElementById("login-result").textContent = "登入已取消";
-            }
+      // 檢查 URL 參數是否包含 LINE 回調
+      function checkLineCallback() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code = urlParams.get("code");
+        const state = urlParams.get("state");
+        const error = urlParams.get("error");
+
+        // 清除 URL 參數
+        if (window.history && window.history.replaceState) {
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+
+        // 處理錯誤
+        if (error) {
+          document.getElementById("loading-indicator").classList.add("hidden");
+          document.getElementById("login-result").textContent = `登入失敗: ${error}`;
+          sessionStorage.removeItem("line_login_pending");
+          return;
+        }
+
+        // 處理授權碼
+        if (code && state) {
+          // 驗證 state
+          const savedState = sessionStorage.getItem("line_login_state");
+          if (state !== savedState) {
+            document.getElementById("loading-indicator").classList.add("hidden");
+            document.getElementById("login-result").textContent = "登入失敗: state 不符合，可能是 CSRF 攻擊";
+            sessionStorage.removeItem("line_login_pending");
+            return;
           }
-        }, 500);
+
+          // 使用授權碼交換 token
+          exchangeCodeForToken(code);
+        }
+      }
+
+      // 使用授權碼交換 token
+      async function exchangeCodeForToken(code) {
+        try {
+          document.getElementById("login-result").textContent = "正在處理登入...";
+
+          // LINE token 端點
+          const tokenUrl = "https://api.line.me/oauth2/v2.1/token";
+
+          // 準備 form data
+          const formData = new URLSearchParams();
+          formData.append("grant_type", "authorization_code");
+          formData.append("code", code);
+          formData.append("redirect_uri", REDIRECT_URI);
+          formData.append("client_id", CLIENT_ID);
+          formData.append("client_secret", "2cd9efafa9728edb5f79cb71af8a07da"); // 注意：實際應用中應由後端處理
+
+          // 發送 token 請求
+          const response = await fetch(tokenUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error(`Token 請求失敗 (${response.status}): ${response.statusText}`);
+          }
+
+          const data = await response.json();
+
+          // 獲取 ID token
+          const idToken = data.id_token;
+          const accessToken = data.access_token;
+
+          // 解析 ID Token 並獲取用戶資訊
+          let userInfo = null;
+          try {
+            const tokenParts = idToken.split(".");
+            if (tokenParts.length === 3) {
+              userInfo = JSON.parse(atob(tokenParts[1]));
+            }
+          } catch (e) {
+            console.error("解析 ID Token 失敗", e);
+          }
+
+          // 顯示登入結果
+          document.getElementById("loading-indicator").classList.add("hidden");
+          document.getElementById("login-result").textContent = "登入成功！";
+          document.getElementById("id-token").textContent = idToken;
+          if (userInfo) {
+            document.getElementById("user-info").textContent = JSON.stringify(userInfo, null, 2);
+          }
+
+          // 清除登入狀態
+          sessionStorage.removeItem("line_login_state");
+          sessionStorage.removeItem("line_login_nonce");
+          sessionStorage.removeItem("line_login_pending");
+
+          // 可選：保存登入資訊到 localStorage 以便後續使用
+          localStorage.setItem("line_id_token", idToken);
+          if (userInfo) {
+            localStorage.setItem("line_user_info", JSON.stringify(userInfo));
+          }
+        } catch (error) {
+          document.getElementById("loading-indicator").classList.add("hidden");
+          document.getElementById("login-result").textContent = `獲取 token 失敗: ${error.message}`;
+          console.error("Token 交換錯誤:", error);
+          sessionStorage.removeItem("line_login_pending");
+        }
       }
 
       // 產生隨機字符串用於 state 和 nonce
@@ -156,6 +260,35 @@
         }
         return result;
       }
+
+      // 解碼 base64
+      function decodeBase64Url(input) {
+        // 將 base64url 轉換為 base64
+        input = input.replace(/-/g, "+").replace(/_/g, "/");
+
+        // 添加填充字符
+        const pad = input.length % 4;
+        if (pad) {
+          if (pad === 1) {
+            throw new Error("非法的 base64url 字符串長度");
+          }
+          input += new Array(5 - pad).join("=");
+        }
+
+        // 解碼
+        return window.atob(input);
+      }
     </script>
+
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </body>
 </html>

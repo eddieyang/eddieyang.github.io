@@ -24,7 +24,7 @@
       "type": "image/png"
     }
   ],
-  "start_url": "/copy.html",
+  "start_url": "/line.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
