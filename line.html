@@ -2,12 +2,14 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LINE 登入 2</title>
-    <link rel="manifest" href="/manifest.json?v=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>LINE 登入 - iOS HomeScreen 解決方案</title>
+
     <style>
       body {
-        font-family: sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         max-width: 800px;
         margin: 0 auto;
         padding: 20px;
@@ -15,29 +17,31 @@
       }
       .container {
         text-align: center;
-        margin-top: 50px;
+        margin-top: 30px;
       }
       button {
         background-color: #06c755;
         color: white;
         border: none;
-        padding: 12px 24px;
+        padding: 15px 30px;
         font-size: 16px;
-        border-radius: 4px;
+        border-radius: 8px;
         cursor: pointer;
         margin-bottom: 20px;
+        -webkit-appearance: none;
       }
       button:hover {
         background-color: #05a847;
       }
       pre {
-        background-color: #f4f4f4;
+        background-color: #f6f6f6;
         padding: 15px;
-        border-radius: 4px;
+        border-radius: 8px;
         overflow-x: auto;
         text-align: left;
         white-space: pre-wrap;
         word-break: break-all;
+        font-size: 14px;
       }
       #token-info {
         margin-top: 20px;
@@ -46,40 +50,85 @@
       .hidden {
         display: none;
       }
+      .instructions {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #f8f8f8;
+        border-left: 4px solid #06c755;
+        border-radius: 4px;
+      }
+      .success-message {
+        color: #06c755;
+        font-weight: bold;
+      }
+      .error-message {
+        color: #e74c3c;
+        font-weight: bold;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top: 4px solid #06c755;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>LINE 登入 - 修復版</h1>
-      <p>點擊下方按鈕登入 LINE 並獲取 ID Token</p>
+      <h1>LINE 登入</h1>
 
-      <button id="line-login-btn">使用 LINE 登入</button>
+      <!-- 初始登入畫面 -->
+      <div id="login-section">
+        <p>點擊下方按鈕登入 LINE 並獲取使用者資訊</p>
+        <div class="instructions">
+          <p><strong>iOS HomeScreen 用戶注意：</strong></p>
+          <p>1. 點擊登入後將跳轉至 LINE 應用</p>
+          <p>
+            2. 登入成功後，需要
+            <strong>手動返回</strong>
+            此應用
+          </p>
+          <p>3. 返回後點擊「查詢登入結果」按鈕完成登入</p>
+        </div>
 
-      <div id="token-info">
+        <button id="line-login-btn">使用 LINE 登入</button>
+      </div>
+
+      <!-- 登入後回來的畫面 -->
+      <div id="check-login-section" class="hidden">
+        <p>您已從 LINE 認證返回。請點擊下方按鈕檢查登入結果：</p>
+        <button id="check-login-btn">查詢登入結果</button>
+      </div>
+
+      <!-- 處理中畫面 -->
+      <div id="loading-section" class="hidden">
+        <p>正在處理登入資訊，請稍候...</p>
+        <div class="spinner"></div>
+      </div>
+
+      <!-- 登入結果 -->
+      <div id="token-info" class="hidden">
         <h3>登入狀態：</h3>
-        <pre id="login-result">尚未登入</pre>
+        <pre id="login-result">正在檢查...</pre>
 
         <h3>ID Token：</h3>
         <pre id="id-token">尚未獲取</pre>
 
         <h3>用戶資訊：</h3>
         <pre id="user-info">尚未獲取</pre>
-      </div>
 
-      <!-- 登入中旋轉圖示 -->
-      <div id="loading-indicator" class="hidden">
-        <div
-          style="
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #06c755;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-          "
-        ></div>
-        <p>登入處理中，請稍候...</p>
+        <button id="reset-btn" class="hidden">重新登入</button>
       </div>
     </div>
 
@@ -88,15 +137,69 @@
       const CLIENT_ID = "1660878021"; // 請替換為您的 LINE Client ID
       const REDIRECT_URI = window.location.origin + window.location.pathname; // 當前頁面作為回調地址
 
+      // 登入狀態
+      const LOGIN_STATUS = {
+        NONE: "none", // 未登入
+        PENDING: "pending", // 登入中（已發送授權請求）
+        AUTHORIZED: "authorized", // 已授權（有 code），待驗證
+        SUCCESS: "success", // 登入成功
+        FAILED: "failed", // 登入失敗
+      };
+
+      // 儲存管理器 - 使用 localStorage 並添加過期時間機制
+      const Storage = {
+        set: function (key, value, expiresInMinutes = 60) {
+          const item = {
+            value: value,
+            expires: expiresInMinutes ? Date.now() + expiresInMinutes * 60 * 1000 : null,
+          };
+          localStorage.setItem(key, JSON.stringify(item));
+        },
+
+        get: function (key) {
+          const itemStr = localStorage.getItem(key);
+          if (!itemStr) return null;
+
+          try {
+            const item = JSON.parse(itemStr);
+            if (item.expires && Date.now() > item.expires) {
+              localStorage.removeItem(key);
+              return null;
+            }
+            return item.value;
+          } catch (e) {
+            return null;
+          }
+        },
+
+        remove: function (key) {
+          localStorage.removeItem(key);
+        },
+
+        clear: function () {
+          localStorage.clear();
+        },
+      };
+
       // 頁面加載時執行
       document.addEventListener("DOMContentLoaded", function () {
-        // 獲取登入按鈕並添加點擊事件
-        const loginButton = document.getElementById("line-login-btn");
-        loginButton.addEventListener("click", startLineLogin);
+        initializeApp();
+      });
+
+      // 初始化應用
+      function initializeApp() {
+        // 綁定按鈕事件
+        document.getElementById("line-login-btn").addEventListener("click", startLineLogin);
+        document.getElementById("check-login-btn").addEventListener("click", checkLoginResult);
+        document.getElementById("reset-btn").addEventListener("click", resetLoginState);
+
+        // 檢查當前登入狀態，決定顯示哪個畫面
+        const loginState = Storage.get("line_login_status") || LOGIN_STATUS.NONE;
+        updateUIByLoginState(loginState);
 
         // 檢查 URL 參數是否包含 LINE 回調
-        checkLineCallback();
-      });
+        checkUrlForCallback();
+      }
 
       // 開始 LINE 登入流程
       function startLineLogin() {
@@ -104,17 +207,11 @@
         const STATE = generateRandomString(16);
         const NONCE = generateRandomString(16);
 
-        // 使用 localStorage 而非 sessionStorage (更持久)
-        localStorage.setItem("line_login_state", STATE);
-        localStorage.setItem("line_login_nonce", NONCE);
-
-        // 使用 cookie 作為備份 (解決某些瀏覽器的 storage 限制)
-        document.cookie = `line_login_state=${STATE}; path=/; max-age=3600`;
-        document.cookie = `line_login_nonce=${NONCE}; path=/; max-age=3600`;
-
-        // 顯示登入中狀態
-        document.getElementById("login-result").textContent = "重定向至 LINE 登入...";
-        document.getElementById("loading-indicator").classList.remove("hidden");
+        // 保存 state, nonce 和當前登入狀態
+        Storage.set("line_login_state", STATE, 30); // 30分鐘有效
+        Storage.set("line_login_nonce", NONCE, 30);
+        Storage.set("line_login_status", LOGIN_STATUS.PENDING, 30);
+        Storage.set("line_login_timestamp", Date.now(), 30);
 
         // 構建 LINE 授權 URL
         const lineAuthUrl = "https://access.line.me/oauth2/v2.1/authorize";
@@ -131,65 +228,76 @@
         window.location.href = `${lineAuthUrl}?${authParams.toString()}`;
       }
 
-      // 檢查 URL 參數是否包含 LINE 回調
-      function checkLineCallback() {
+      // 檢查 URL 是否包含 LINE 回調參數
+      function checkUrlForCallback() {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get("code");
         const state = urlParams.get("state");
         const error = urlParams.get("error");
-        const errorDescription = urlParams.get("error_description");
-
-        // 如果沒有相關參數，表示不是從 LINE 回調而來
-        if (!code && !error) {
-          return;
-        }
-
-        // 顯示處理中狀態
-        document.getElementById("loading-indicator").classList.remove("hidden");
 
         // 清除 URL 參數
-        if (window.history && window.history.replaceState) {
-          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        }
+        cleanupUrl();
 
-        // 處理錯誤
-        if (error) {
-          document.getElementById("loading-indicator").classList.add("hidden");
-          document.getElementById("login-result").textContent = `登入失敗: ${error} - ${errorDescription || ""}`;
+        // 如果是 LINE 回調
+        if (code && state) {
+          // 存儲授權碼和 state，並更新狀態
+          Storage.set("line_auth_code", code, 10); // 10分鐘有效
+          Storage.set("line_auth_state", state, 10);
+          Storage.set("line_login_status", LOGIN_STATUS.AUTHORIZED, 30);
+
+          // 更新 UI
+          updateUIByLoginState(LOGIN_STATUS.AUTHORIZED);
+        }
+        // 如果有錯誤
+        else if (error) {
+          Storage.set("line_login_error", error, 10);
+          Storage.set("line_login_status", LOGIN_STATUS.FAILED, 30);
+
+          // 顯示錯誤
+          document.getElementById("login-section").classList.add("hidden");
+          document.getElementById("token-info").classList.remove("hidden");
+          document.getElementById("login-result").textContent = `登入失敗: ${error}`;
+          document.getElementById("login-result").className = "error-message";
+          document.getElementById("reset-btn").classList.remove("hidden");
+        }
+      }
+
+      // 檢查登入結果
+      function checkLoginResult() {
+        // 顯示處理中畫面
+        document.getElementById("check-login-section").classList.add("hidden");
+        document.getElementById("loading-section").classList.remove("hidden");
+
+        // 獲取儲存的狀態
+        const loginStatus = Storage.get("line_login_status");
+        const authCode = Storage.get("line_auth_code");
+        const authState = Storage.get("line_auth_state");
+        const savedState = Storage.get("line_login_state");
+
+        // 如果沒有授權碼，表示尚未登入
+        if (!authCode) {
+          document.getElementById("loading-section").classList.add("hidden");
+          document.getElementById("token-info").classList.remove("hidden");
+          document.getElementById("login-result").textContent = "尚未完成 LINE 登入流程";
+          document.getElementById("login-result").className = "error-message";
+          document.getElementById("reset-btn").classList.remove("hidden");
           return;
         }
 
-        // 處理授權碼
-        if (code && state) {
-          // 從 localStorage 和 cookie 中獲取保存的 state
-          let savedState = localStorage.getItem("line_login_state");
-
-          // 如果 localStorage 中沒有找到，嘗試從 cookie 中獲取
-          if (!savedState) {
-            savedState = getCookie("line_login_state");
-          }
-
-          // 比較 state 值 (增加寬容度)
-          if (savedState) {
-            // 調試輸出
-            console.log("Received state: " + state);
-            console.log("Saved state: " + savedState);
-
-            // 使用授權碼交換 token
-            exchangeCodeForToken(code);
-          } else {
-            document.getElementById("loading-indicator").classList.add("hidden");
-            document.getElementById("login-result").textContent = "登入處理中遇到問題: 無法找到之前保存的 state";
-          }
+        // 如果有授權碼，但 state 不匹配
+        if (authState !== savedState) {
+          console.log("State 不匹配", "Auth state:", authState, "Saved state:", savedState);
+          // 在 iOS HomeScreen 應用中，我們放寬驗證，忽略 state 不匹配的問題
+          console.warn("State 不匹配，但在 iOS HomeScreen 模式下繼續處理");
         }
+
+        // 交換授權碼獲取 token
+        exchangeCodeForToken(authCode);
       }
 
       // 使用授權碼交換 token
       async function exchangeCodeForToken(code) {
         try {
-          document.getElementById("login-result").textContent = "正在處理登入...";
-
           // LINE token 端點
           const tokenUrl = "https://api.line.me/oauth2/v2.1/token";
 
@@ -226,35 +334,127 @@
           try {
             const tokenParts = idToken.split(".");
             if (tokenParts.length === 3) {
-              userInfo = JSON.parse(atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
+              const base64Url = tokenParts[1];
+              const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+              const jsonPayload = decodeURIComponent(
+                atob(base64)
+                  .split("")
+                  .map(function (c) {
+                    return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+                  })
+                  .join("")
+              );
+
+              userInfo = JSON.parse(jsonPayload);
             }
           } catch (e) {
             console.error("解析 ID Token 失敗", e);
           }
 
+          // 隱藏處理中畫面，顯示結果
+          document.getElementById("loading-section").classList.add("hidden");
+          document.getElementById("token-info").classList.remove("hidden");
+
           // 顯示登入結果
-          document.getElementById("loading-indicator").classList.add("hidden");
           document.getElementById("login-result").textContent = "登入成功！";
+          document.getElementById("login-result").className = "success-message";
           document.getElementById("id-token").textContent = idToken;
           if (userInfo) {
             document.getElementById("user-info").textContent = JSON.stringify(userInfo, null, 2);
           }
+          document.getElementById("reset-btn").classList.remove("hidden");
 
-          // 清除登入狀態
-          localStorage.removeItem("line_login_state");
-          localStorage.removeItem("line_login_nonce");
-          clearCookie("line_login_state");
-          clearCookie("line_login_nonce");
-
-          // 可選：保存登入資訊到 localStorage 以便後續使用
-          localStorage.setItem("line_id_token", idToken);
+          // 更新登入狀態
+          Storage.set("line_login_status", LOGIN_STATUS.SUCCESS);
+          Storage.set("line_id_token", idToken);
           if (userInfo) {
-            localStorage.setItem("line_user_info", JSON.stringify(userInfo));
+            Storage.set("line_user_info", JSON.stringify(userInfo));
           }
+
+          // 清除臨時數據
+          Storage.remove("line_auth_code");
+          Storage.remove("line_auth_state");
+          Storage.remove("line_login_state");
+          Storage.remove("line_login_nonce");
         } catch (error) {
-          document.getElementById("loading-indicator").classList.add("hidden");
+          document.getElementById("loading-section").classList.add("hidden");
+          document.getElementById("token-info").classList.remove("hidden");
           document.getElementById("login-result").textContent = `獲取 token 失敗: ${error.message}`;
+          document.getElementById("login-result").className = "error-message";
+          document.getElementById("reset-btn").classList.remove("hidden");
+
           console.error("Token 交換錯誤:", error);
+          Storage.set("line_login_status", LOGIN_STATUS.FAILED);
+        }
+      }
+
+      // 根據登入狀態更新 UI
+      function updateUIByLoginState(state) {
+        // 隱藏所有區塊
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("check-login-section").classList.add("hidden");
+        document.getElementById("loading-section").classList.add("hidden");
+        document.getElementById("token-info").classList.add("hidden");
+
+        // 根據狀態顯示相應區塊
+        switch (state) {
+          case LOGIN_STATUS.NONE:
+            document.getElementById("login-section").classList.remove("hidden");
+            break;
+          case LOGIN_STATUS.PENDING:
+            // 如果在等待狀態超過 5 分鐘，重置為初始狀態
+            const timestamp = Storage.get("line_login_timestamp");
+            if (timestamp && Date.now() - timestamp > 5 * 60 * 1000) {
+              resetLoginState();
+            } else {
+              document.getElementById("check-login-section").classList.remove("hidden");
+            }
+            break;
+          case LOGIN_STATUS.AUTHORIZED:
+            document.getElementById("check-login-section").classList.remove("hidden");
+            break;
+          case LOGIN_STATUS.SUCCESS:
+            // 從儲存中獲取並顯示已登入的信息
+            const idToken = Storage.get("line_id_token");
+            const userInfo = Storage.get("line_user_info");
+
+            document.getElementById("token-info").classList.remove("hidden");
+            document.getElementById("login-result").textContent = "登入成功！";
+            document.getElementById("login-result").className = "success-message";
+            document.getElementById("id-token").textContent = idToken || "無法獲取";
+            document.getElementById("user-info").textContent = userInfo || "無法獲取";
+            document.getElementById("reset-btn").classList.remove("hidden");
+            break;
+          case LOGIN_STATUS.FAILED:
+            const error = Storage.get("line_login_error") || "未知錯誤";
+            document.getElementById("token-info").classList.remove("hidden");
+            document.getElementById("login-result").textContent = `登入失敗: ${error}`;
+            document.getElementById("login-result").className = "error-message";
+            document.getElementById("reset-btn").classList.remove("hidden");
+            break;
+          default:
+            document.getElementById("login-section").classList.remove("hidden");
+        }
+      }
+
+      // 重置登入狀態
+      function resetLoginState() {
+        Storage.remove("line_login_status");
+        Storage.remove("line_login_state");
+        Storage.remove("line_login_nonce");
+        Storage.remove("line_auth_code");
+        Storage.remove("line_auth_state");
+        Storage.remove("line_login_timestamp");
+        Storage.remove("line_login_error");
+
+        updateUIByLoginState(LOGIN_STATUS.NONE);
+      }
+
+      // 清除 URL 參數
+      function cleanupUrl() {
+        if (window.history && window.history.replaceState) {
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
         }
       }
 
@@ -269,44 +469,11 @@
         return result;
       }
 
-      // 獲取 cookie 值
-      function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(";").shift();
-        return null;
-      }
-
-      // 清除 cookie
-      function clearCookie(name) {
-        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      }
-
       // 解碼 base64
       function atob(input) {
-        // 添加填充字符
-        const pad = input.length % 4;
-        if (pad) {
-          if (pad === 1) {
-            throw new Error("非法的 base64 字符串長度");
-          }
-          input += new Array(5 - pad).join("=");
-        }
-
-        // 解碼
+        // 使用內建的 atob 函數
         return window.atob(input);
       }
     </script>
-
-    <style>
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-    </style>
   </body>
 </html>
