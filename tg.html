@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telegram WebApp 診斷工具</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--tg-theme-bg-color, #ffffff);
+        color: var(--tg-theme-text-color, #000000);
+        padding: 16px;
+        line-height: 1.4;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        border-radius: 12px;
+      }
+
+      .section {
+        margin-bottom: 24px;
+        padding: 16px;
+        background: var(--tg-theme-secondary-bg-color, #f8f8f8);
+        border-radius: 12px;
+        border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 12px;
+        color: var(--tg-theme-link-color, #0066cc);
+      }
+
+      .property {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+      }
+
+      .property:last-child {
+        border-bottom: none;
+      }
+
+      .property-name {
+        font-weight: 500;
+        flex: 1;
+      }
+
+      .property-value {
+        font-family: "Courier New", monospace;
+        background: var(--tg-theme-bg-color, #ffffff);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .status {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: bold;
+      }
+
+      .status.supported {
+        background: #4caf50;
+        color: white;
+      }
+
+      .status.not-supported {
+        background: #f44336;
+        color: white;
+      }
+
+      .status.partial {
+        background: #ff9800;
+        color: white;
+      }
+
+      .status.unknown {
+        background: #9e9e9e;
+        color: white;
+      }
+
+      .method-test {
+        margin-top: 8px;
+        padding: 8px;
+        background: var(--tg-theme-bg-color, #ffffff);
+        border-radius: 4px;
+        border: 1px solid var(--tg-theme-hint-color, #e0e0e0);
+      }
+
+      .btn {
+        background: var(--tg-theme-button-color, #0066cc);
+        color: var(--tg-theme-button-text-color, #ffffff);
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        margin: 4px;
+      }
+
+      .btn:hover {
+        opacity: 0.8;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .log {
+        background: #000;
+        color: #00ff00;
+        padding: 12px;
+        border-radius: 4px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        margin-top: 12px;
+      }
+
+      .expandable {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .expandable:before {
+        content: "▶ ";
+        display: inline-block;
+        transition: transform 0.2s;
+      }
+
+      .expandable.expanded:before {
+        transform: rotate(90deg);
+      }
+
+      .expandable-content {
+        display: none;
+        margin-top: 8px;
+        padding-left: 16px;
+      }
+
+      .expandable.expanded + .expandable-content {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔍 Telegram WebApp 診斷工具</h1>
+        <p>檢查 Telegram WebApp API 的支援程度和可用功能</p>
+      </div>
+
+      <!-- 基本資訊 -->
+      <div class="section">
+        <h2 class="section-title">📱 基本資訊</h2>
+        <div id="basic-info"></div>
+      </div>
+
+      <!-- 核心屬性 -->
+      <div class="section">
+        <h2 class="section-title">⚙️ 核心屬性</h2>
+        <div id="core-properties"></div>
+      </div>
+
+      <!-- 使用者資訊 -->
+      <div class="section">
+        <h2 class="section-title">👤 使用者資訊</h2>
+        <div id="user-info"></div>
+      </div>
+
+      <!-- 裝置和環境 -->
+      <div class="section">
+        <h2 class="section-title">📱 裝置和環境</h2>
+        <div id="device-info"></div>
+      </div>
+
+      <!-- 按鈕和控制 -->
+      <div class="section">
+        <h2 class="section-title">🎛️ 按鈕和控制</h2>
+        <div id="buttons-info"></div>
+      </div>
+
+      <!-- 新功能檢測 -->
+      <div class="section">
+        <h2 class="section-title">🆕 新功能支援</h2>
+        <div id="new-features"></div>
+      </div>
+
+      <!-- 方法測試 -->
+      <div class="section">
+        <h2 class="section-title">🧪 方法測試</h2>
+        <div id="method-tests"></div>
+      </div>
+
+      <!-- 事件監聽 -->
+      <div class="section">
+        <h2 class="section-title">📡 事件監聽</h2>
+        <div id="events-info"></div>
+        <div class="log" id="event-log"></div>
+      </div>
+
+      <!-- JSON 輸出 -->
+      <div class="section">
+        <h2 class="section-title expandable" onclick="toggleExpandable(this)">📄 完整 JSON 輸出</h2>
+        <div class="expandable-content">
+          <pre id="json-output" class="log"></pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let eventLog = [];
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        eventLog.push(`[${timestamp}] ${message}`);
+        updateEventLog();
+      }
+
+      function updateEventLog() {
+        const logElement = document.getElementById("event-log");
+        logElement.textContent = eventLog.slice(-20).join("\n");
+        logElement.scrollTop = logElement.scrollHeight;
+      }
+
+      function getStatus(value) {
+        if (value === undefined || value === null) {
+          return '<span class="status not-supported">不支援</span>';
+        }
+        if (typeof value === "function") {
+          return '<span class="status supported">方法可用</span>';
+        }
+        if (typeof value === "boolean") {
+          return value
+            ? '<span class="status supported">True</span>'
+            : '<span class="status not-supported">False</span>';
+        }
+        return '<span class="status supported">可用</span>';
+      }
+
+      function createProperty(name, value, description = "") {
+        const status = getStatus(value);
+        const displayValue =
+          value === undefined
+            ? "undefined"
+            : value === null
+            ? "null"
+            : typeof value === "function"
+            ? "function()"
+            : typeof value === "object"
+            ? JSON.stringify(value).substring(0, 50) + "..."
+            : String(value);
+
+        return `
+                <div class="property">
+                    <div class="property-name">
+                        ${name}
+                        ${description ? `<br><small style="color: #666;">${description}</small>` : ""}
+                    </div>
+                    <div>
+                        ${status}
+                        <div class="property-value">${displayValue}</div>
+                    </div>
+                </div>
+            `;
+      }
+
+      function toggleExpandable(element) {
+        element.classList.toggle("expanded");
+      }
+
+      function diagnose() {
+        const tg = window.Telegram?.WebApp;
+
+        if (!tg) {
+          document.body.innerHTML =
+            '<div class="container"><div class="header"><h1>❌ Telegram WebApp 不可用</h1><p>請在 Telegram 中開啟此頁面</p></div></div>';
+          return;
+        }
+
+        // 基本資訊
+        document.getElementById("basic-info").innerHTML = `
+                ${createProperty("WebApp 物件", tg ? "可用" : "不可用")}
+                ${createProperty("版本", tg.version, "Telegram WebApp API 版本")}
+                ${createProperty("平台", tg.platform, "運行平台 (android/ios/desktop等)")}
+                ${createProperty("初始化", tg.isExpanded, "是否已展開")}
+                ${createProperty("準備狀態", tg.ready ? "已準備" : "未準備")}
+            `;
+
+        // 核心屬性
+        document.getElementById("core-properties").innerHTML = `
+                ${createProperty("colorScheme", tg.colorScheme, "顏色主題")}
+                ${createProperty("themeParams", tg.themeParams, "主題參數")}
+                ${createProperty("isExpanded", tg.isExpanded, "是否展開模式")}
+                ${createProperty("viewportHeight", tg.viewportHeight, "視窗高度")}
+                ${createProperty("viewportStableHeight", tg.viewportStableHeight, "穩定視窗高度")}
+                ${createProperty("headerColor", tg.headerColor, "標題列顏色")}
+                ${createProperty("backgroundColor", tg.backgroundColor, "背景顏色")}
+                ${createProperty("isClosingConfirmationEnabled", tg.isClosingConfirmationEnabled, "關閉確認")}
+                ${createProperty("isVerticalSwipesEnabled", tg.isVerticalSwipesEnabled, "垂直滑動")}
+            `;
+
+        // 使用者資訊
+        const user = tg.initDataUnsafe?.user;
+        document.getElementById("user-info").innerHTML = `
+                ${createProperty("initData", tg.initData ? "有資料" : "無資料", "初始化資料")}
+                ${createProperty("initDataUnsafe", tg.initDataUnsafe ? "有資料" : "無資料", "未加密初始化資料")}
+                ${createProperty("使用者 ID", user?.id, "當前使用者 ID")}
+                ${createProperty("使用者名稱", user?.first_name, "使用者名字")}
+                ${createProperty("用戶名", user?.username, "Telegram 用戶名")}
+                ${createProperty("語言代碼", user?.language_code, "使用者語言")}
+                ${createProperty("頭像 URL", user?.photo_url, "使用者頭像")}
+                ${createProperty("Premium 用戶", user?.is_premium, "是否為 Premium 用戶")}
+            `;
+
+        // 裝置和環境資訊
+        document.getElementById("device-info").innerHTML = `
+                ${createProperty("safeAreaInset", tg.safeAreaInset, "安全區域內邊距")}
+                ${createProperty("contentSafeAreaInset", tg.contentSafeAreaInset, "內容安全區域")}
+                ${createProperty("isActive", tg.isActive, "WebApp 是否活躍")}
+                ${createProperty("isFullscreen", tg.isFullscreen, "是否全螢幕模式")}
+                ${createProperty("isOrientationLocked", tg.isOrientationLocked, "螢幕方向是否鎖定")}
+                ${createProperty("deviceOrientation", tg.DeviceOrientation, "裝置方向感測器")}
+                ${createProperty("accelerometer", tg.Accelerometer, "加速度感測器")}
+                ${createProperty("gyroscope", tg.Gyroscope, "陀螺儀感測器")}
+            `;
+
+        // 按鈕和控制
+        document.getElementById("buttons-info").innerHTML = `
+                ${createProperty("MainButton", tg.MainButton, "主按鈕")}
+                ${createProperty("SecondaryButton", tg.SecondaryButton, "次要按鈕")}
+                ${createProperty("BackButton", tg.BackButton, "返回按鈕")}
+                ${createProperty("SettingsButton", tg.SettingsButton, "設定按鈕")}
+                ${createProperty("HapticFeedback", tg.HapticFeedback, "觸覺回饋")}
+                ${createProperty("CloudStorage", tg.CloudStorage, "雲端儲存")}
+                ${createProperty("BiometricManager", tg.BiometricManager, "生物辨識管理")}
+            `;
+
+        // 新功能
+        document.getElementById("new-features").innerHTML = `
+                ${createProperty("addToHomeScreen", tg.addToHomeScreen, "添加到主螢幕")}
+                ${createProperty("checkHomeScreenStatus", tg.checkHomeScreenStatus, "檢查主螢幕狀態")}
+                ${createProperty("requestFullscreen", tg.requestFullscreen, "請求全螢幕")}
+                ${createProperty("exitFullscreen", tg.exitFullscreen, "退出全螢幕")}
+                ${createProperty("lockOrientation", tg.lockOrientation, "鎖定螢幕方向")}
+                ${createProperty("unlockOrientation", tg.unlockOrientation, "解鎖螢幕方向")}
+                ${createProperty("LocationManager", tg.LocationManager, "位置管理")}
+                ${createProperty("downloadFile", tg.downloadFile, "檔案下載")}
+                ${createProperty("shareToStory", tg.shareToStory, "分享到動態")}
+                ${createProperty("switchInlineQuery", tg.switchInlineQuery, "切換內聯查詢")}
+                ${createProperty("invokeCustomMethod", tg.invokeCustomMethod, "呼叫自定義方法")}
+            `;
+
+        // 方法測試
+        setupMethodTests(tg);
+
+        // 設定事件監聽
+        setupEventListeners(tg);
+
+        // JSON 輸出
+        document.getElementById("json-output").textContent = JSON.stringify(
+          {
+            version: tg.version,
+            platform: tg.platform,
+            user: tg.initDataUnsafe?.user,
+            themeParams: tg.themeParams,
+            viewportHeight: tg.viewportHeight,
+            capabilities: {
+              addToHomeScreen: !!tg.addToHomeScreen,
+              fullscreen: !!(tg.requestFullscreen && tg.exitFullscreen),
+              cloudStorage: !!tg.CloudStorage,
+              biometrics: !!tg.BiometricManager,
+              haptics: !!tg.HapticFeedback,
+              location: !!tg.LocationManager,
+              deviceSensors: !!(tg.Accelerometer || tg.Gyroscope),
+            },
+          },
+          null,
+          2
+        );
+
+        log("診斷完成");
+      }
+
+      function setupMethodTests(tg) {
+        const tests = [
+          {
+            name: "展開 WebApp",
+            method: "expand",
+            test: () => tg.expand(),
+          },
+          {
+            name: "關閉 WebApp",
+            method: "close",
+            test: () => confirm("確定要關閉 WebApp 嗎？") && tg.close(),
+          },
+          {
+            name: "顯示主按鈕",
+            method: "MainButton.show",
+            test: () => {
+              tg.MainButton.setText("測試按鈕");
+              tg.MainButton.show();
+              log("主按鈕已顯示");
+            },
+          },
+          {
+            name: "隱藏主按鈕",
+            method: "MainButton.hide",
+            test: () => {
+              tg.MainButton.hide();
+              log("主按鈕已隱藏");
+            },
+          },
+          {
+            name: "觸覺回饋",
+            method: "HapticFeedback.impactOccurred",
+            test: () => {
+              tg.HapticFeedback?.impactOccurred?.("medium");
+              log("觸覺回饋已觸發");
+            },
+          },
+          {
+            name: "添加到主螢幕",
+            method: "addToHomeScreen",
+            test: () => {
+              if (tg.addToHomeScreen) {
+                const status = tg.checkHomeScreenStatus?.() || "unknown";
+                log(`主螢幕狀態: ${status}`);
+                if (status === "supported") {
+                  tg.addToHomeScreen();
+                  log("嘗試添加到主螢幕");
+                } else {
+                  log("裝置不支援添加到主螢幕");
+                }
+              } else {
+                log("addToHomeScreen 方法不可用");
+              }
+            },
+          },
+          {
+            name: "全螢幕模式",
+            method: "requestFullscreen",
+            test: () => {
+              if (tg.requestFullscreen) {
+                tg.requestFullscreen();
+                log("請求全螢幕模式");
+              } else {
+                log("全螢幕功能不可用");
+              }
+            },
+          },
+          {
+            name: "讀取剪貼簿",
+            method: "readTextFromClipboard",
+            test: () => {
+              if (tg.readTextFromClipboard) {
+                tg.readTextFromClipboard((text) => {
+                  log(`剪貼簿內容: ${text}`);
+                });
+              } else {
+                log("讀取剪貼簿功能不可用");
+              }
+            },
+          },
+        ];
+
+        const testsHtml = tests
+          .map((test) => {
+            const available = test.method.split(".").reduce((obj, prop) => obj?.[prop], tg);
+            return `
+                    <div class="method-test">
+                        <strong>${test.name}</strong> ${getStatus(available)}
+                        <br>
+                        <button class="btn" onclick="runTest('${test.name}')" ${!available ? "disabled" : ""}>
+                            測試
+                        </button>
+                    </div>
+                `;
+          })
+          .join("");
+
+        document.getElementById("method-tests").innerHTML = testsHtml;
+
+        // 儲存測試函數到全域
+        window.testFunctions = {};
+        tests.forEach((test) => {
+          window.testFunctions[test.name] = test.test;
+        });
+      }
+
+      function runTest(testName) {
+        try {
+          log(`執行測試: ${testName}`);
+          window.testFunctions[testName]();
+        } catch (error) {
+          log(`測試失敗: ${testName} - ${error.message}`);
+        }
+      }
+
+      function setupEventListeners(tg) {
+        const events = [
+          "themeChanged",
+          "viewportChanged",
+          "mainButtonClicked",
+          "secondaryButtonClicked",
+          "backButtonClicked",
+          "settingsButtonClicked",
+          "invoiceRequestClosed",
+          "popupClosed",
+          "qrTextReceived",
+          "clipboardTextReceived",
+          "writeAccessRequested",
+          "contactRequested",
+          "biometricManagerUpdated",
+          "biometricAuthRequested",
+          "biometricTokenUpdated",
+          "activated",
+          "deactivated",
+          "safeAreaChanged",
+          "contentSafeAreaChanged",
+          "fullscreenChanged",
+          "fullscreenFailed",
+          "homeScreenAdded",
+          "homeScreenChecked",
+        ];
+
+        let listenedEvents = 0;
+        events.forEach((event) => {
+          try {
+            tg.onEvent(event, (data) => {
+              log(`事件: ${event} - ${JSON.stringify(data)}`);
+            });
+            listenedEvents++;
+          } catch (error) {
+            // 忽略不支援的事件
+          }
+        });
+
+        document.getElementById("events-info").innerHTML = `
+                <div class="property">
+                    <div class="property-name">監聽的事件數量</div>
+                    <div class="property-value">${listenedEvents} / ${events.length}</div>
+                </div>
+                <div class="property">
+                    <div class="property-name">支援的事件</div>
+                    <div class="property-value">檢查下方日誌</div>
+                </div>
+            `;
+
+        log(`開始監聽 ${listenedEvents} 個事件`);
+      }
+
+      // 等待 Telegram WebApp 載入
+      window.addEventListener("load", () => {
+        setTimeout(diagnose, 100);
+      });
+
+      // 如果 Telegram 已經載入
+      if (window.Telegram?.WebApp) {
+        diagnose();
+      }
+    </script>
+  </body>
+</html>
