@@ -490,6 +490,19 @@
               }
             },
           },
+          {
+            name: "檢查主螢幕狀態",
+            method: "checkHomeScreenStatus",
+            test: () => {
+              if (tg.checkHomeScreenStatus) {
+                const status = tg.checkHomeScreenStatus();
+                log(`主螢幕狀態: ${status}`);
+                log(`狀態說明: ${status === 'supported' ? '支援添加到主螢幕' : status === 'unsupported' ? '不支援添加到主螢幕' : status === 'added' ? '已添加到主螢幕' : '未知狀態'}`);
+              } else {
+                log("checkHomeScreenStatus 方法不可用");
+              }
+            },
+          },
         ];
 
         const testsHtml = tests
