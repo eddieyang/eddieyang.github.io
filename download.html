@@ -23,7 +23,7 @@
       }
 
       .download-btn {
-        display: inline-block;
+        display: block;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 15px 30px;
@@ -35,8 +35,9 @@
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         border: none;
         cursor: pointer;
-        min-width: 200px;
+        width: 320px;
         text-align: center;
+        box-sizing: border-box;
       }
 
       .download-btn:hover {
@@ -81,6 +82,21 @@
         <div class="btn-label">按鈕2：下載 Canvas 圖片</div>
         <a href="#" id="canvasDownloadBtn" class="download-btn">下載 Canvas 圖片</a>
       </div>
+
+      <div>
+        <div class="btn-label">按鈕3：下載 Blob + TXT</div>
+        <button id="blobDownloadBtn" class="download-btn">下載 Blob + TXT</button>
+      </div>
+
+      <div>
+        <div class="btn-label">按鈕4：下載 Blob + Image</div>
+        <button id="blobImageDownloadBtn" class="download-btn">下載 Blob + Image + Canvas</button>
+      </div>
+
+      <div>
+        <div class="btn-label">按鈕5：下載 Blob + JSON</div>
+        <button id="blobJsonDownloadBtn" class="download-btn">下載 Blob + JSON</button>
+      </div>
     </div>
 
     <script>
@@ -121,6 +137,176 @@
         link.href = base64Image;
         link.download = "canvas-123.png";
         link.click();
+      });
+
+      // 為按鈕3添加點擊事件
+      document.getElementById("blobDownloadBtn").addEventListener("click", function (e) {
+        e.preventDefault();
+        
+        // 創建文字內容
+        const textContent = `這是一個測試文件
+時間：${new Date().toLocaleString()}
+內容：WebView 下載測試
+功能：Blob + TXT 下載
+描述：使用 Blob API 創建並下載文字檔案
+
+測試項目：
+1. 文字編碼測試
+2. 中文字符支援
+3. 特殊符號：!@#$%^&*()
+4. 數字：123456789
+5. 英文：ABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+結束。`;
+        
+        // 創建 Blob
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
+        
+        // 創建 URL
+        const url = URL.createObjectURL(blob);
+        
+        // 創建下載連結
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "test-file.txt";
+        
+        // 觸發下載
+        link.click();
+        
+        // 清理 URL
+        URL.revokeObjectURL(url);
+        
+        // 調用 downloadCalled (如果存在)
+        if (typeof downloadCalled === 'function') {
+          downloadCalled('test-file.txt');
+        } else {
+          console.log('downloadCalled function not available');
+        }
+      });
+
+      // 為按鈕4添加點擊事件
+      document.getElementById("blobImageDownloadBtn").addEventListener("click", function (e) {
+        e.preventDefault();
+        
+        // 創建 Canvas 並畫一個更複雜的圖片
+        const canvas = document.createElement("canvas");
+        canvas.width = 300;
+        canvas.height = 300;
+        const ctx = canvas.getContext("2d");
+        
+        // 背景漸變
+        const gradient = ctx.createLinearGradient(0, 0, 300, 300);
+        gradient.addColorStop(0, "#667eea");
+        gradient.addColorStop(1, "#764ba2");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 300, 300);
+        
+        // 畫一些幾何圖形
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(50, 50, 200, 200);
+        
+        ctx.fillStyle = "#ff6b6b";
+        ctx.beginPath();
+        ctx.arc(150, 150, 80, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.fillStyle = "#4ecdc4";
+        ctx.fillRect(100, 100, 100, 100);
+        
+        // 添加文字
+        ctx.fillStyle = "#333333";
+        ctx.font = "24px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("Canvas", 150, 80);
+        ctx.fillText("Blob", 150, 220);
+        ctx.fillText("Image", 150, 250);
+        
+        // 將 Canvas 轉換為 Blob
+        canvas.toBlob(function(blob) {
+          // 創建 URL
+          const url = URL.createObjectURL(blob);
+          
+          // 創建下載連結
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "canvas-blob-image.png";
+          
+          // 觸發下載
+          link.click();
+          
+          // 清理 URL
+          URL.revokeObjectURL(url);
+          
+          // 調用 downloadCalled (如果存在)
+          if (typeof downloadCalled === 'function') {
+            downloadCalled('canvas-blob-image.png');
+          } else {
+            console.log('downloadCalled function not available');
+          }
+        }, 'image/png');
+      });
+
+      // 為按鈕5添加點擊事件
+      document.getElementById("blobJsonDownloadBtn").addEventListener("click", function (e) {
+        e.preventDefault();
+        
+        // 創建 JSON 資料
+        const jsonData = {
+          "title": "WebView 下載測試 JSON 檔案",
+          "timestamp": new Date().toISOString(),
+          "version": "1.0.0",
+          "description": "這是一個使用 Blob API 下載的 JSON 測試檔案",
+          "features": [
+            "Blob API 支援",
+            "JSON 格式下載",
+            "中文字符測試",
+            "特殊符號測試"
+          ],
+          "testData": {
+            "numbers": [1, 2, 3, 4, 5],
+            "boolean": true,
+            "null_value": null,
+            "nested_object": {
+              "name": "測試物件",
+              "type": "nested",
+              "properties": {
+                "color": "blue",
+                "size": "medium",
+                "tags": ["test", "json", "blob", "下載"]
+              }
+            }
+          },
+          "specialCharacters": "!@#$%^&*()_+{}[]|\\:;\"'<>?,./~`",
+          "unicode": "🚀 📱 💻 🎉 ✅",
+          "status": "success"
+        };
+        
+        // 將 JSON 物件轉換為字串
+        const jsonString = JSON.stringify(jsonData, null, 2);
+        
+        // 創建 Blob
+        const blob = new Blob([jsonString], { type: 'application/json;charset=utf-8' });
+        
+        // 創建 URL
+        const url = URL.createObjectURL(blob);
+        
+        // 創建下載連結
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "test-data.json";
+        
+        // 觸發下載
+        link.click();
+        
+        // 清理 URL
+        URL.revokeObjectURL(url);
+        
+        // 調用 downloadCalled (如果存在)
+        if (typeof downloadCalled === 'function') {
+          downloadCalled('test-data.json');
+        } else {
+          console.log('downloadCalled function not available');
+        }
       });
     </script>
   </body>
