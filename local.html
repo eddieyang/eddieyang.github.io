@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>localStorage 效能測試</h1>
+    <button id="testBtn">開始測試</button>
+    <div id="results"></div>
+
+    <script>
+      function generateTestString(sizeMB) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        const targetBytes = sizeMB * 1024 * 1024;
+        let result = '';
+        
+        for (let i = 0; i < targetBytes; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      }
+
+      async function testLocalStorageWrite() {
+        const testString = generateTestString(3.5);
+        const results = [];
+        
+        for (let i = 0; i < 10; i++) {
+          const start = performance.now();
+          localStorage.setItem('testData', testString);
+          const end = performance.now();
+          const duration = end - start;
+          results.push(duration);
+          
+          localStorage.removeItem('testData');
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        const average = results.reduce((sum, time) => sum + time, 0) / results.length;
+        
+        document.getElementById('results').innerHTML = `
+          <h2>測試結果</h2>
+          <p>字串大小: 3.5MB</p>
+          <p>測試次數: 10次</p>
+          <p>各次耗時: ${results.map(t => t.toFixed(2) + 'ms').join(', ')}</p>
+          <p><strong>平均耗時: ${average.toFixed(2)}ms</strong></p>
+        `;
+      }
+
+      document.getElementById('testBtn').addEventListener('click', testLocalStorageWrite);
+    </script>
+  </body>
+</html>
