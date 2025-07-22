@@ -7,7 +7,8 @@
   </head>
   <body>
     <h1>localStorage 效能測試</h1>
-    <button id="testBtn">開始測試</button>
+    <button id="writeBtn">測試寫入</button>
+    <button id="readBtn">測試讀取</button>
     <div id="results"></div>
 
     <script>
@@ -41,7 +42,7 @@
         const average = results.reduce((sum, time) => sum + time, 0) / results.length;
 
         document.getElementById("results").innerHTML = `
-          <h2>測試結果</h2>
+          <h2>寫入測試結果</h2>
           <p>字串大小: 3.5MB</p>
           <p>測試次數: 10次</p>
           <p>各次耗時: ${results.map((t) => t.toFixed(2) + "ms").join(", ")}</p>
@@ -49,7 +50,37 @@
         `;
       }
 
-      document.getElementById("testBtn").addEventListener("click", testLocalStorageWrite);
+      async function testLocalStorageRead() {
+        const testString = generateTestString(3.5);
+        localStorage.setItem("testData", testString);
+        
+        const results = [];
+        
+        for (let i = 0; i < 10; i++) {
+          const start = performance.now();
+          const data = localStorage.getItem("testData");
+          const end = performance.now();
+          const duration = end - start;
+          results.push(duration);
+          
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        
+        localStorage.removeItem("testData");
+        
+        const average = results.reduce((sum, time) => sum + time, 0) / results.length;
+        
+        document.getElementById("results").innerHTML = `
+          <h2>讀取測試結果</h2>
+          <p>字串大小: 3.5MB</p>
+          <p>測試次數: 10次</p>
+          <p>各次耗時: ${results.map((t) => t.toFixed(2) + "ms").join(", ")}</p>
+          <p><strong>平均耗時: ${average.toFixed(2)}ms</strong></p>
+        `;
+      }
+
+      document.getElementById("writeBtn").addEventListener("click", testLocalStorageWrite);
+      document.getElementById("readBtn").addEventListener("click", testLocalStorageRead);
     </script>
   </body>
 </html>
