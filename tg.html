@@ -503,16 +503,103 @@
               }
             },
           },
+          {
+            name: "測試 <a> 標籤 target=\"_blank\"",
+            method: "a_blank",
+            test: () => {
+              const testLink = document.createElement('a');
+              testLink.href = 'https://www.google.com';
+              testLink.target = '_blank';
+              testLink.textContent = '開啟 Google (a href + _blank)';
+              testLink.className = 'btn';
+              testLink.style.cssText = 'display: inline-block; text-decoration: none;';
+              
+              // 不使用 preventDefault，讓 <a> 標籤正常工作
+              testLink.onclick = () => {
+                log('點擊 <a> 標籤 - href="https://www.google.com" target="_blank"');
+                // 讓瀏覽器處理 <a> 標籤的默認行為
+              };
+              
+              const testDiv = document.createElement('div');
+              testDiv.innerHTML = `<p>點擊下方連結測試 &lt;a href="https://www.google.com" target="_blank"&gt;：</p><br>`;
+              testDiv.appendChild(testLink);
+              
+              const existingTest = document.getElementById('a-blank-test');
+              if (existingTest) {
+                existingTest.remove();
+              }
+              
+              testDiv.id = 'a-blank-test';
+              testDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: var(--tg-theme-bg-color, #fff); border-radius: 4px;';
+              
+              const methodTests = document.getElementById('method-tests');
+              if (!methodTests) {
+                log('錯誤: 找不到 method-tests 元素');
+                return;
+              }
+              methodTests.appendChild(testDiv);
+              
+              log('已生成 <a> 標籤測試連結，target="_blank"');
+            },
+          },
+          {
+            name: "測試 window.open _blank",
+            method: "window_open",
+            test: () => {
+              const testButton = document.createElement('button');
+              testButton.textContent = '開啟 Google (window.open)';
+              testButton.className = 'btn';
+              
+              testButton.onclick = () => {
+                log('點擊 window.open 按鈕');
+                try {
+                  log('嘗試使用 window.open 開啟: https://www.google.com');
+                  const newWindow = window.open('https://www.google.com', '_blank');
+                  
+                  if (newWindow) {
+                    log('window.open 成功 - 新視窗已開啟');
+                  } else {
+                    log('window.open 失敗 - 可能被瀏覽器阻擋或不支援');
+                  }
+                } catch (error) {
+                  log(`window.open 測試失敗: ${error.message}`);
+                }
+              };
+              
+              const testDiv = document.createElement('div');
+              testDiv.innerHTML = `<p>使用 window.open 開啟 Google：</p><br>`;
+              testDiv.appendChild(testButton);
+              
+              const existingTest = document.getElementById('window-open-test');
+              if (existingTest) {
+                existingTest.remove();
+              }
+              
+              testDiv.id = 'window-open-test';
+              testDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: var(--tg-theme-bg-color, #fff); border-radius: 4px;';
+              
+              const methodTests = document.getElementById('method-tests');
+              methodTests.appendChild(testDiv);
+              
+              log('已添加 window.open 測試按鈕');
+            },
+          },
         ];
 
         const testsHtml = tests
-          .map((test) => {
-            const available = test.method.split(".").reduce((obj, prop) => obj?.[prop], tg);
+          .map((test, index) => {
+            let available;
+            // 特殊處理我們自定義的測試
+            if (test.method === "a_blank" || test.method === "window_open") {
+              available = true; // 這兩個測試始終可用
+            } else {
+              available = test.method.split(".").reduce((obj, prop) => obj?.[prop], tg);
+            }
             return `
                     <div class="method-test">
                         <strong>${test.name}</strong> ${getStatus(available)}
                         <br>
-                        <button class="btn" onclick="runTest('${test.name}')" ${!available ? "disabled" : ""}>
+                        <button class="btn" onclick="runTestByIndex(${index})" ${!available ? "disabled" : ""}>
                             測試
                         </button>
                     </div>
@@ -524,17 +611,46 @@
 
         // 儲存測試函數到全域
         window.testFunctions = {};
+        window.testsList = tests;
         tests.forEach((test) => {
           window.testFunctions[test.name] = test.test;
         });
       }
 
+      function runTestByIndex(index) {
+        try {
+          const test = window.testsList[index];
+          if (!test) {
+            log(`錯誤: 找不到索引 ${index} 的測試`);
+            return;
+          }
+          log(`執行測試: ${test.name}`);
+          console.log(`Debug: 執行測試 ${test.name}`);
+          test.test();
+          log(`測試 ${test.name} 執行完成`);
+        } catch (error) {
+          log(`測試失敗: 索引 ${index} - ${error.message}`);
+          console.error(`Debug: 測試失敗`, error);
+        }
+      }
+
       function runTest(testName) {
         try {
           log(`執行測試: ${testName}`);
+          console.log(`Debug: 執行測試 ${testName}`);
+          if (!window.testFunctions) {
+            log(`錯誤: testFunctions 未初始化`);
+            return;
+          }
+          if (!window.testFunctions[testName]) {
+            log(`錯誤: 找不到測試函數 ${testName}`);
+            return;
+          }
           window.testFunctions[testName]();
+          log(`測試 ${testName} 執行完成`);
         } catch (error) {
           log(`測試失敗: ${testName} - ${error.message}`);
+          console.error(`Debug: 測試失敗`, error);
         }
       }
 
