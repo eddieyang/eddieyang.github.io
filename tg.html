@@ -584,14 +584,100 @@
               log('已添加 window.open 測試按鈕');
             },
           },
+          {
+            name: "測試 window.open Intent URL",
+            method: "window_open_intent",
+            test: () => {
+              const testButton = document.createElement('button');
+              testButton.textContent = '開啟 Google (window.open intent://)';
+              testButton.className = 'btn';
+              
+              testButton.onclick = () => {
+                log('點擊 window.open intent:// 按鈕');
+                try {
+                  const intentUrl = 'intent://www.google.com#Intent;scheme=https;package=com.android.chrome;end';
+                  log(`嘗試使用 window.open 開啟: ${intentUrl}`);
+                  const newWindow = window.open(intentUrl, '_blank');
+                  
+                  if (newWindow) {
+                    log('window.open intent:// 成功 - 新視窗已開啟');
+                  } else {
+                    log('window.open intent:// 失敗 - 可能被瀏覽器阻擋或不支援');
+                  }
+                } catch (error) {
+                  log(`window.open intent:// 測試失敗: ${error.message}`);
+                }
+              };
+              
+              const testDiv = document.createElement('div');
+              testDiv.innerHTML = `<p>使用 window.open 開啟 intent:// URL：</p><br>`;
+              testDiv.appendChild(testButton);
+              
+              const existingTest = document.getElementById('window-open-intent-test');
+              if (existingTest) {
+                existingTest.remove();
+              }
+              
+              testDiv.id = 'window-open-intent-test';
+              testDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: var(--tg-theme-bg-color, #fff); border-radius: 4px;';
+              
+              const methodTests = document.getElementById('method-tests');
+              methodTests.appendChild(testDiv);
+              
+              log('已添加 window.open intent:// 測試按鈕');
+            },
+          },
+          {
+            name: "測試 Telegram openLink Intent URL",
+            method: "tg_openLink_intent",
+            test: () => {
+              const testButton = document.createElement('button');
+              testButton.textContent = '開啟 Google (Telegram openLink intent://)';
+              testButton.className = 'btn';
+              
+              testButton.onclick = () => {
+                log('點擊 Telegram openLink intent:// 按鈕');
+                try {
+                  const intentUrl = 'intent://www.google.com#Intent;scheme=https;package=com.android.chrome;end';
+                  log(`嘗試使用 Telegram.WebApp.openLink 開啟: ${intentUrl}`);
+                  
+                  if (window.Telegram?.WebApp?.openLink) {
+                    window.Telegram.WebApp.openLink(intentUrl);
+                    log('Telegram.WebApp.openLink intent:// 成功執行');
+                  } else {
+                    log('Telegram.WebApp.openLink 方法不可用');
+                  }
+                } catch (error) {
+                  log(`Telegram.WebApp.openLink intent:// 測試失敗: ${error.message}`);
+                }
+              };
+              
+              const testDiv = document.createElement('div');
+              testDiv.innerHTML = `<p>使用 Telegram.WebApp.openLink 開啟 intent:// URL：</p><br>`;
+              testDiv.appendChild(testButton);
+              
+              const existingTest = document.getElementById('tg-openlink-intent-test');
+              if (existingTest) {
+                existingTest.remove();
+              }
+              
+              testDiv.id = 'tg-openlink-intent-test';
+              testDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: var(--tg-theme-bg-color, #fff); border-radius: 4px;';
+              
+              const methodTests = document.getElementById('method-tests');
+              methodTests.appendChild(testDiv);
+              
+              log('已添加 Telegram.WebApp.openLink intent:// 測試按鈕');
+            },
+          },
         ];
 
         const testsHtml = tests
           .map((test, index) => {
             let available;
             // 特殊處理我們自定義的測試
-            if (test.method === "a_blank" || test.method === "window_open") {
-              available = true; // 這兩個測試始終可用
+            if (test.method === "a_blank" || test.method === "window_open" || test.method === "window_open_intent" || test.method === "tg_openLink_intent") {
+              available = true; // 這些測試始終可用
             } else {
               available = test.method.split(".").reduce((obj, prop) => obj?.[prop], tg);
             }
